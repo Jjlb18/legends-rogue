@@ -373,7 +373,36 @@ function rollTier(g,atLeastRare){let t;if(g.pity>=PITY-1)t='legendary';else{let 
  if(atLeastRare&&t==='common')t='rare';g.pity=t==='legendary'||t==='secret'?0:g.pity+1;return t}
 function rosterAll(){const l=(rosterOpts.useDefaults?DEFAULTS:[]).concat(customs);return l.length?l:DEFAULTS}
 function pickHatch(tier){for(let i=TIERS.indexOf(tier);i>=0;i--){const p=rosterAll().filter(s=>rarOf(s)===TIERS[i]||(TIERS[i]==='common'&&rarOf(s)==='starter'));if(p.length)return pick(p)}return pick(rosterAll())}
-const eggHTML=(t,c='',st='')=>`<div class="egg ${t} ${c}" style="${st}"><i></i></div>`;
+const eggHTML=(t,c='',st='',emb='')=>`<div class="egg ${t} ${c}" style="${st}"><i></i>${emb?`<img class="emb" src="${emb}" alt="">`:''}</div>`;
+const eggEmb=e=>e&&e.sid&&SPECIES[e.sid]&&LOCKED_R.includes(e.tier)?symbolURL(SPECIES[e.sid],e.tier):'';
+// symbols for the legendary / secret pull animation
+const SYMS={star:c=>{let p=[];for(let i=0;i<16;i++){const r=i%2?19:47,a=i*Math.PI/8-Math.PI/2;p.push((50+r*Math.cos(a)).toFixed(1)+','+(50+r*Math.sin(a)).toFixed(1))}return `<polygon points="${p.join(' ')}" fill="${c}"/>`},
+ hexagram:c=>`<g fill="none" stroke="${c}" stroke-width="7" stroke-linejoin="miter"><polygon points="50,7 88,73 12,73"/><polygon points="50,93 12,27 88,27"/></g>`,
+ sun:c=>`<circle cx="50" cy="50" r="19" fill="${c}"/><g stroke="${c}" stroke-width="6" stroke-linecap="round">${Array.from({length:12},(_,i)=>{const a=i*Math.PI/6;return `<line x1="${(50+28*Math.cos(a)).toFixed(1)}" y1="${(50+28*Math.sin(a)).toFixed(1)}" x2="${(50+45*Math.cos(a)).toFixed(1)}" y2="${(50+45*Math.sin(a)).toFixed(1)}"/>`}).join('')}</g>`,
+ bolt:c=>`<polygon points="60,3 18,56 46,56 36,97 84,40 55,40 68,3" fill="${c}"/>`};
+function symbolURL(sp,tier){const a=sp&&sp.anim;if(a&&a.startsWith('data:'))return a;const k=a&&a.startsWith('sym:')&&SYMS[a.slice(4)]?a.slice(4):'star';
+ return 'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${SYMS[k](tier==='secret'?'#ffffff':'#ffcf4a')}</svg>`)}
+async function symbolAnim(url,tier){const ov=document.createElement('div');ov.id='symov';if(tier==='secret')ov.classList.add('secret');
+ ov.innerHTML=`<img class="sym" src="${url}" alt=""><div class="symegg">${eggHTML(tier,'big')}</div><div class="symtxt"></div>`;document.body.appendChild(ov);
+ const sym=ov.querySelector('.sym'),egg=ov.querySelector('.symegg'),txt=ov.querySelector('.symtxt');
+ await sleep(500);
+ await sym.animate([{transform:'scale(0)',opacity:0},{transform:'scale(1)',opacity:1}],{duration:600,easing:'ease-out',fill:'forwards'}).finished;
+ await sleep(300);
+ await sym.animate([{transform:'rotate(0deg)'},{transform:'rotate(3240deg)'}],{duration:3400,easing:'cubic-bezier(.8,0,1,1)',fill:'forwards'}).finished;
+ await sleep(700);
+ egg.style.visibility='visible';await egg.animate([{transform:'scale(0)'},{transform:'scale(1.15)'},{transform:'scale(1)'}],{duration:450,fill:'forwards'}).finished;
+ const a=sym.getBoundingClientRect(),b=egg.getBoundingClientRect(),dx=b.left+b.width/2-(a.left+a.width/2),dy=b.top+b.height*.48-(a.top+a.height/2),k=b.width*.64/a.width;
+ await sym.animate([{transform:'translate(0,0) scale(1)'},{transform:`translate(${dx}px,${dy}px) scale(${k})`}],{duration:800,easing:'cubic-bezier(.5,0,.9,.5)',fill:'forwards'}).finished;
+ egg.querySelector('.egg').insertAdjacentHTML('beforeend',`<img class="emb" src="${url}" alt="">`);sym.style.visibility='hidden';
+ const f=document.createElement('div');f.className='flash'+(tier==='secret'?'':' gold');f.style.zIndex=95;document.body.appendChild(f);setTimeout(()=>f.remove(),1000);
+ egg.animate([{transform:'scale(1.25)'},{transform:'scale(1)'}],{duration:400});
+ txt.textContent=tier==='secret'?'⚫ ŒUF SECRET !':'🟡 ŒUF LÉGENDAIRE !';
+ await new Promise(r=>{const t=setTimeout(r,2400);ov.onclick=()=>{clearTimeout(t);r()}});
+ await ov.animate([{opacity:1},{opacity:0}],{duration:400,fill:'forwards'}).finished;ov.remove()}
+function symFromFile(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const S=256,c=document.createElement('canvas');c.width=c.height=S;const x=c.getContext('2d');
+ const k=Math.min(S/im.width,S/im.height),w=im.width*k,h=im.height*k;x.drawImage(im,(S-w)/2,(S-h)/2,w,h);
+ if(!hasCutout(im)){const d=x.getImageData(0,0,S,S),p=d.data;for(let i=0;i<p.length;i+=4){const l=(p[i]+p[i+1]+p[i+2])/3;p[i]=p[i+1]=p[i+2]=255;p[i+3]=l<110?255:l<170?Math.round((170-l)*4.25):0}x.putImageData(d,0,0)}
+ res(c.toDataURL('image/png'))};im.onerror=rej;im.src=r.result};r.onerror=rej;r.readAsDataURL(file)})}
 async function gachaTick(boss){const g=gacha();let ready=0;g.eggs.forEach(e=>{if(e.left>0){e.left--;if(!e.left)ready++}});if(boss)g.tickets++;setGacha(g);
  if(boss)await say('🎟️ +1 ticket de tirage !',1000);
  const n=gacha().eggs.filter(e=>e.left<=0).length;if(n){await say(n>1?`🥚 Oh ? ${n} œufs éclosent !`:'🥚 Oh ? Un œuf éclot !',900);await hatchReady()}}
@@ -394,25 +423,26 @@ function openGacha(res){const g=gacha(),box=$('#modalBox');
 function openEggs(){const g=gacha(),box=$('#modalBox'),rd=g.eggs.filter(e=>e.left<=0).length;
  box.innerHTML=`<h3>🥚 Mes œufs (${g.eggs.length})</h3>
  ${rd?`<div class="btnrow" style="margin:0 0 12px"><button class="primary" id="hatchNow">🐣 Faire éclore (${rd})</button></div>`:''}
- <div class="eggs">${g.eggs.length?g.eggs.slice().sort((a,b)=>a.left-b.left).map(e=>`<div class="eg">${eggHTML(e.tier)}${e.left>0?e.left+' vague'+(e.left>1?'s':''):'Prêt !'}</div>`).join(''):'<span class="note">Aucun œuf pour l’instant. Va à la 🎰 machine à tirage pour en obtenir !</span>'}</div>
+ <div class="eggs">${g.eggs.length?g.eggs.slice().sort((a,b)=>a.left-b.left).map(e=>`<div class="eg">${eggHTML(e.tier,'','',eggEmb(e))}${e.left>0?e.left+' vague'+(e.left>1?'s':''):'Prêt !'}</div>`).join(''):'<span class="note">Aucun œuf pour l’instant. Va à la 🎰 machine à tirage pour en obtenir !</span>'}</div>
  <div class="note">Les œufs éclosent après des vagues jouées : ⚪ 5 · 🔵 10 · 🟣 25 · 🟡 50 · ⚫ 75. Un combattant éclos est débloqué ; s’il l’était déjà, il gagne une ⭐ (+2 niveaux au départ, max 5).</div>
  <div class="btnrow"><button id="toGacha">🎰 Machine à tirage · 🎟️ ${g.tickets}</button></div>`;
  const c=document.createElement('button');c.className='opt cancel';c.textContent='Fermer';c.onclick=()=>{$('#modal').classList.add('hidden');if(!$('#s-title').classList.contains('hidden'))title()};box.appendChild(c);
  $('#modal').classList.remove('hidden');
  $('#toGacha').onclick=()=>openGacha();if($('#hatchNow'))$('#hatchNow').onclick=()=>{$('#modal').classList.add('hidden');hatchReady()}}
 async function doPull(n){const g=gacha();if(g.tickets<n)return;g.tickets-=n;const res=[];
- for(let i=0;i<n;i++){const t=rollTier(g,n===10&&i===n-1&&!res.some(x=>x!=='common'));res.push(t);g.eggs.push({id:Math.random().toString(36).slice(2),tier:t,left:EGG[t].waves})}
+ const special=[];for(let i=0;i<n;i++){const t=rollTier(g,n===10&&i===n-1&&!res.some(x=>x!=='common'));res.push(t);const egg={id:Math.random().toString(36).slice(2),tier:t,left:EGG[t].waves};if(LOCKED_R.includes(t)){egg.sid=pickHatch(t).id;special.push(egg)}g.eggs.push(egg)}
  setGacha(g);$('#pull1').disabled=$('#pull10').disabled=true;
  $('#knob').classList.add('turn');$('#mach').classList.add('shake');await sleep(750);
  const best=TIERS[Math.max(...res.map(t=>TIERS.indexOf(t)))];$('#chute').innerHTML=eggHTML(best,'drop');await sleep(650);
- if(best!=='common'&&best!=='rare'){const f=document.createElement('div');f.className='flash'+(best==='secret'?' rainbow':best==='legendary'?' gold':'');document.body.appendChild(f);setTimeout(()=>f.remove(),1000)}
+ if(best==='epic'){const f=document.createElement('div');f.className='flash';document.body.appendChild(f);setTimeout(()=>f.remove(),1000)}
+ for(const e of special)await symbolAnim(symbolURL(SPECIES[e.sid],e.tier),e.tier);
  openGacha(res)}
 let hatching=false;
-function hatchEgg(g,egg){const sp=pickHatch(egg.tier);g.eggs=g.eggs.filter(e=>e.id!==egg.id);let msg,r;
+function hatchEgg(g,egg){const sp=(egg.sid&&SPECIES[egg.sid])||pickHatch(egg.tier);g.eggs=g.eggs.filter(e=>e.id!==egg.id);let msg,r;
  if(!canStart(sp,g)){g.unlocked.push(sp.id);r='new';msg=rarOf(sp)==='secret'?'⚫ INCROYABLE ! Combattant SECRET débloqué ! Tu peux le choisir dans ton équipe.':rarOf(sp)==='legendary'?'🔓 Nouveau légendaire débloqué ! Tu peux le choisir dans ton équipe.':'🔓 Nouveau combattant débloqué ! Tu peux le choisir dans ton équipe.'}
  else{const n=Math.min(5,(g.stars[sp.id]||0)+1);g.stars[sp.id]=n;r='star';msg=`⭐ ${esc(sp.name)} gagne une étoile (${n}/5) : il commencera au niveau ${5+2*n} !`}
  return{sp,msg,r}}
-async function hatchAnim(egg,sp,msg){const box=$('#modalBox');box.innerHTML=`<h3>Oh ? Un œuf éclot !</h3><div class="hatch">${eggHTML(egg.tier,'big wob')}</div>`;$('#modal').classList.remove('hidden');
+async function hatchAnim(egg,sp,msg){const box=$('#modalBox');box.innerHTML=`<h3>Oh ? Un œuf éclot !</h3><div class="hatch">${eggHTML(egg.tier,'big wob','',eggEmb(egg))}</div>`;$('#modal').classList.remove('hidden');
  await sleep(1700);const f=document.createElement('div');f.className='flash'+(egg.tier==='secret'?' rainbow':egg.tier==='legendary'?' gold':'');document.body.appendChild(f);setTimeout(()=>f.remove(),1000);
  await new Promise(r=>{box.innerHTML=`<h3>Un œuf a éclos !</h3><div class="hatch"><div class="av">${av(sp)}</div><div class="nm">${esc(sp.name)}</div><div>${sp.types.map(tb).join('')}${rtag(sp)}</div><div class="modtxt" style="margin-top:12px">${msg}</div></div>`;
   const b=document.createElement('button');b.className='opt cancel';b.textContent='Super !';b.onclick=()=>{$('#modal').classList.add('hidden');r()};box.appendChild(b)})}
@@ -511,7 +541,7 @@ function edStatUpd(){let t=0;['hp','atk','def','spd'].forEach(k=>{const v=+$('#e
  $('#edBst').textContent=`· total ${t} · coûte ${costOf({base:{hp:t,atk:0,def:0,spd:0},rarity:$('#edRar').value})} pts`}
 function edFillMoves(ms){LEARN_AT.forEach((_,i)=>$('#em_'+i).innerHTML=moveOptions(ms[i]||''))}
 function edPrev(){$('#edPrev').innerHTML=av({img:ed.img,pv:ed.pv,emoji:$('#edEmoji').value.trim()||'⭐'});$('#edNoImg').classList.toggle('hidden',!ed.img)}
-function edLoad(s){ed={id:s?s.id:null,img:s?s.img||null:null,px:!!(s&&s.px),pv:s?s.pv||0:0};$('#edTitle').textContent=s?(ORIG[s.id]?`Modifier ${s.name} (de base)`:'Modifier le combattant'):'Nouveau combattant';
+function edLoad(s){ed={id:s?s.id:null,img:s?s.img||null:null,px:!!(s&&s.px),pv:s?s.pv||0:0,anim:s&&s.anim||'sym:star'};edAnimUI();$('#edTitle').textContent=s?(ORIG[s.id]?`Modifier ${s.name} (de base)`:'Modifier le combattant'):'Nouveau combattant';
  $('#edSave').textContent=s&&ORIG[s.id]?'Enregistrer les modifications':'Enregistrer';
  $('#edName').value=s?s.name:'';$('#edEmoji').value=s?s.emoji||'⭐':'⭐';$('#edT1').value=s?s.types[0]:'Science';$('#edT2').value=s&&s.types[1]?s.types[1]:'';$('#edRar').value=s?rarOf(s):'common';edStatUpd();
  ['hp','atk','def','spd'].forEach(k=>$('#es_'+k).value=s?s.base[k]:65);edStatUpd();edFillMoves(s?s.moves:genMoves([$('#edT1').value]));edPrev()}
@@ -527,7 +557,7 @@ function editorScreen(){if(!isAdmin())return;show('s-editor');$('#useDef').check
 function edSave(){const name=$('#edName').value.trim();if(!name)return toast('Donne un nom à ton combattant');
  const t1=$('#edT1').value,t2=$('#edT2').value;const types=t2&&t2!==t1?[t1,t2]:[t1];
  const moves=LEARN_AT.map((_,i)=>$('#em_'+i).value);if(!moves.some(Boolean))return toast('Choisis au moins une attaque');
- const s={id:ed.id||'c_'+Date.now().toString(36),name,emoji:$('#edEmoji').value.trim()||'⭐',img:ed.img||null,types,rarity:$('#edRar').value,
+ const s={id:ed.id||'c_'+Date.now().toString(36),name,emoji:$('#edEmoji').value.trim()||'⭐',img:ed.img||null,types,rarity:$('#edRar').value,anim:ed.anim,
   base:{hp:+$('#es_hp').value,atk:+$('#es_atk').value,def:+$('#es_def').value,spd:+$('#es_spd').value},moves,px:!!(ed.img&&ed.px),pv:ed.img?ed.pv:0};
  let ok;if(ORIG[s.id]){overrides[s.id]=s;applyOv(s.id);ok=LS.set('lr_overrides',overrides)}
  else{s.custom=true;const i=customs.findIndex(x=>x.id===s.id);if(i>=0)customs[i]=s;else customs.push(s);SPECIES[s.id]=s;ok=LS.set('lr_species',customs)}
@@ -548,7 +578,12 @@ $('#quitBtn').onclick=async()=>{const v=await choose('Quitter la partie ? Elle e
 edInit();
 $('#edT1').onchange=$('#edT2').onchange=()=>{if(!ed.id)$('#edAuto').click()};
 $('#edAuto').onclick=()=>{const t2=$('#edT2').value;edFillMoves(genMoves(t2&&t2!==$('#edT1').value?[$('#edT1').value,t2]:[$('#edT1').value]))};
-$('#edEmoji').oninput=edPrev;$('#edRar').onchange=edStatUpd;
+$('#edEmoji').oninput=edPrev;$('#edRar').onchange=()=>{edStatUpd();edAnimUI()};
+function edAnimUI(){const custom=ed.anim&&ed.anim.startsWith('data:');$('#edAnim').value=custom?'custom':ed.anim;
+ $('#edAnimPrev').innerHTML=`<img src="${symbolURL({anim:ed.anim},$('#edRar').value)}" alt="">`}
+$('#edAnim').onchange=e=>{if(e.target.value==='custom'){if(!(ed.anim&&ed.anim.startsWith('data:'))){$('#edAnimFile').click();e.target.value=ed.anim}return}ed.anim=e.target.value;edAnimUI()};
+$('#edAnimFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{ed.anim=await symFromFile(f);edAnimUI()}catch(x){toast('Impossible de lire cette image')}e.target.value=''};
+$('#edAnimTest').onclick=()=>{const r=$('#edRar').value;symbolAnim(symbolURL({anim:ed.anim},r),r==='secret'?'secret':'legendary')};
 $('#edFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{ed.img=await loadImg(f);ed.px=true;ed.pv=2;edPrev()}catch(x){toast('Impossible de lire cette image')}e.target.value=''};
 $('#edNoImg').onclick=()=>{ed.img=null;edPrev()};
 $('#edSave').onclick=edSave;$('#edReset').onclick=()=>edLoad(null);

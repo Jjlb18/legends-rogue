@@ -183,6 +183,15 @@ table.tc th{font-weight:normal}
 .prow input{width:60px}.prow button{padding:6px 8px;font-size:9px}
 .card .dex{position:absolute;top:6px;left:6px;font-family:'Press Start 2P',monospace;font-size:9px;color:var(--txt);background:#0006;padding:3px 5px;border-radius:4px}
 .card .star{top:26px;left:8px}
+#symov{position:fixed;inset:0;background:#000;z-index:90;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;animation:fadein .5s;cursor:pointer}
+#symov .sym{width:min(56vw,300px);height:min(56vw,300px);object-fit:contain;filter:drop-shadow(0 0 18px #ffcf4a88)}
+#symov.secret .sym{filter:drop-shadow(0 0 18px #ffffff88)}
+#symov .symegg{visibility:hidden}
+#symov .symtxt{font-family:'Press Start 2P',monospace;font-size:14px;color:#ffcf4a;min-height:22px;text-align:center}
+#symov.secret .symtxt{color:#fff}
+.egg .emb{position:absolute;left:18%;top:22%;width:64%;height:54%;object-fit:contain;filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000)}
+.symprev{width:80px;height:80px;background:#000;border:2px solid var(--line);border-radius:10px;display:flex;align-items:center;justify-content:center}
+.symprev img{width:64px;height:64px;object-fit:contain}
 .tcs{display:grid;gap:6px}
 .tcr{display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;align-items:center;background:var(--panel2);border-radius:8px;padding:8px 10px}
 .tcr .tb{font-size:8px;padding:4px 6px}.tct .tb{font-size:9px;padding:6px 8px}
@@ -337,6 +346,12 @@ button.link{background:none;border:none;color:var(--dim);font-family:'VT323',mon
       <div class="fld"><label>Rareté</label>
         <select id="edRar"><option value="starter">🟢 Starter</option><option value="common">⚪ Commune</option><option value="rare">🔵 Rare</option><option value="epic">🟣 Épique</option><option value="legendary">🟡 Légendaire</option><option value="secret">⚫ Secret</option></select>
         <div class="note" style="margin-top:4px">🟢 Starter : disponible dès le début pour tous les joueurs. Les autres doivent être recrutés ou éclos pour être débloqués. Plus c’est rare : moins on le croise, plus il coûte cher en début de partie et plus il est dur à recruter. Les 🟡 légendaires apparaissent en combat à partir de la vague 8 (très rarement) ou dans les œufs. Les ⚫ secrets s’obtiennent <b>uniquement dans les œufs</b> (1 chance sur 250).</div>
+      </div>
+      <div class="fld"><label>Animation de tirage (🟡 légendaire / ⚫ secret)</label>
+        <div class="look"><div id="edAnimPrev" class="symprev"></div>
+          <div><select id="edAnim"><option value="sym:star">✦ Étoile (par défaut)</option><option value="sym:hexagram">✡ Étoile à six branches</option><option value="sym:sun">☀ Soleil</option><option value="sym:bolt">⚡ Éclair</option><option value="custom">🖼️ Image perso</option></select>
+            <div class="btnrow" style="margin-top:6px"><span class="filebtn"><button type="button">Choisir une image</button><input type="file" id="edAnimFile" accept="image/*"></span><button type="button" id="edAnimTest">▶ Tester</button></div></div></div>
+        <div class="note" style="margin-top:4px">Quand un joueur tire l’œuf de ce combattant : écran noir, le symbole tourne de plus en plus vite, s’arrête d’un coup et se pose sur l’œuf. (Une image sur fond blanc devient une silhouette blanche.)</div>
       </div>
       <div class="fld"><label>Stats de base <span id="edBst"></span></label>
         <div id="edStats"></div>
