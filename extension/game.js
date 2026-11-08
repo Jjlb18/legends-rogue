@@ -96,6 +96,9 @@ const RAR={starter:{n:'Starter',c:'#22c55e',w:100,cost:0,catch:1},common:{n:'Com
  epic:{n:'Épique',c:'#a855f7',w:18,cost:2,catch:.6},legendary:{n:'Légendaire',c:'#f59e0b',w:6,cost:3,catch:.4},secret:{n:'Secret',c:'#000000',w:0,cost:4,catch:.25}};
 const LOCKED_R=['legendary','secret'];
 // a fighter can start a run if its rarity is Starter or the player unlocked it (recruited or hatched)
+const RORDER=['starter','common','rare','epic','legendary','secret'];
+// every fighter, sorted by rarity (Starter first, Secret last); the position is its number
+function dexList(){const l=[...(rosterOpts.useDefaults||!customs.length?DEFAULTS:[]),...customs];return l.map((s,i)=>[s,i]).sort((a,b)=>RORDER.indexOf(rarOf(a[0]))-RORDER.indexOf(rarOf(b[0]))||a[1]-b[1]).map(x=>x[0])}
 function unlockOrStar(g,sid){const sp=SPECIES[sid];if(!sp)return null;if(!canStart(sp,g)){g.unlocked.push(sid);return 'new'}g.stars[sid]=Math.min(5,(g.stars[sid]||0)+1);return 'star'}
 function canStart(s,g){if(rarOf(s)==='starter'||g.unlocked.includes(s.id))return true;
  return !rosterAll().some(x=>rarOf(x)==='starter')&&rarOf(s)==='common'}
@@ -194,12 +197,12 @@ let picks=[];const BUDGET=10;
 function starterScreen(){picks=[];show('s-starter');renderStarters()}
 function renderStarters(){const used=picks.reduce((a,id)=>a+costOf(SPECIES[id]),0);
  $('#stBudget').innerHTML=`Points ${used}/${BUDGET}<span class="pips">${Array.from({length:BUDGET},(_,i)=>`<span class="pip ${i<used?'on':''}"></span>`).join('')}</span>`;
- const gg0=gacha(),list=[...customs,...(rosterOpts.useDefaults||!customs.length?DEFAULTS:[])].map((s,i)=>[s,i]).sort((a,b)=>(canStart(b[0],gg0)-canStart(a[0],gg0))||a[1]-b[1]).map(x=>x[0]);
+ const gg0=gacha(),list=dexList();
  $('#stChosen').innerHTML=picks.length?picks.map(id=>`<div class="mini"><span class="av">${av(SPECIES[id])}</span>${esc(SPECIES[id].name)}</div>`).join(''):`<span class="empty">Touche les combattants ci-dessous pour les ajouter à ton équipe (6 max). Les plus forts coûtent plus de points. 🔓 Débloque les autres en les recrutant en combat ou en les faisant éclore : ${list.filter(s=>canStart(s,gacha())).length} / ${list.length} débloqués.</span>`;
  $('#stGo').disabled=!picks.length;
  const gg=gacha();
- $('#stGrid').innerHTML=list.map(s=>{const sel=picks.includes(s.id),c=costOf(s),lk=!canStart(s,gg),can=!lk&&(sel||(used+c<=BUDGET&&picks.length<6)),st=Math.min(5,gg.stars[s.id]||0);
-  return `<div class="card ${rarOf(s)} ${lk?'locked':''} ${sel?'sel':''} ${can?'':'no'}" style="--rc:${RAR[rarOf(s)].c}" data-id="${esc(s.id)}">${customs.includes(s)?'<span class="star">★</span>':''}<span class="cost">${c}</span>${st?`<span class="stars">⭐${st}</span>`:''}<div class="av">${av(s)}</div><div class="nm">${lk&&rarOf(s)==='secret'?'???':esc(s.name)}</div><div>${lk&&rarOf(s)==='secret'?'<span class="tb" style="background:#000">???</span>':s.types.map(tb).join('')}</div><div style="margin-top:4px">${rtag(s)}</div>${lk?`<span class="lockt">🔒 ${rarOf(s)==='secret'?'Œufs uniquement':'Recrute-le ou fais-le éclore'}</span>`:''}</div>`}).join('');
+ $('#stGrid').innerHTML=list.map((s,ix)=>{const sel=picks.includes(s.id),c=costOf(s),lk=!canStart(s,gg),can=!lk&&(sel||(used+c<=BUDGET&&picks.length<6)),st=Math.min(5,gg.stars[s.id]||0);
+  return `<div class="card ${rarOf(s)} ${lk?'locked':''} ${sel?'sel':''} ${can?'':'no'}" style="--rc:${RAR[rarOf(s)].c}" data-id="${esc(s.id)}">${customs.includes(s)?'<span class="star">★</span>':''}<span class="cost">${c}</span>${st?`<span class="stars">⭐${st}</span>`:''}<div class="av">${av(s)}</div><span class="dex">#${String(ix+1).padStart(2,'0')}</span><div class="nm">${lk&&rarOf(s)==='secret'?'???':esc(s.name)}</div><div>${lk&&rarOf(s)==='secret'?'<span class="tb" style="background:#000">???</span>':s.types.map(tb).join('')}</div><div style="margin-top:4px">${rtag(s)}</div>${lk?`<span class="lockt">🔒 ${rarOf(s)==='secret'?'Œufs uniquement':'Recrute-le ou fais-le éclore'}</span>`:''}</div>`}).join('');
  $('#stGrid').querySelectorAll('.card').forEach(el=>el.onclick=()=>{if(el.classList.contains('locked'))return toast(rarOf(SPECIES[el.dataset.id])==='secret'?'🔒 Les secrets s’obtiennent uniquement dans les œufs !':'🔒 Recrute-le en combat ou obtiens-le dans un œuf !');const id=el.dataset.id;const i=picks.indexOf(id);
   if(i>=0)picks.splice(i,1);else{const c=costOf(SPECIES[id]);if(used+c>BUDGET||picks.length>=6)return toast('Pas assez de points');picks.push(id)}renderStarters()})}
 function startRun(){const order=[...BIOMES.keys()].sort(()=>Math.random()-.5);
@@ -437,7 +440,7 @@ async function adminPanel(){if(!isAdmin())return;const box=$('#modalBox');
  <div class="adm"><h4>Mes tickets : <span id="admMine">${gacha().tickets}</span> 🎟️</h4><div class="arow"><input type="number" id="admMeN" value="10" step="1"><button class="primary" id="admMe">Appliquer</button><span class="note">(négatif = retirer)</span></div></div>
  <div class="adm"><h4>🎁 Donner / retirer à TOUS les joueurs</h4><div class="arow"><input type="number" id="admAllN" value="5" step="1"><span>tickets</span><input type="text" id="admAllMsg" maxlength="80" placeholder="Message (facultatif)"><button class="primary" id="admAll">Envoyer</button></div>
   <div class="note" style="margin-top:6px">Un nombre négatif retire des tickets (jamais en dessous de 0). Chaque joueur le reçoit une seule fois, à sa prochaine visite du menu (les nouveaux joueurs aussi).</div></div>
- <div class="adm"><h4>🎭 Donner un combattant</h4><div class="arow"><select id="admSp" style="flex:1;min-width:160px">${rosterAll().slice().sort((a,b)=>a.name.localeCompare(b.name)).map(sp=>`<option value="${esc(sp.id)}">${esc(sp.name)} · ${RAR[rarOf(sp)].n}</option>`).join('')}</select><button id="admSpMe">À moi</button><button class="primary" id="admSpAll">À tous</button></div>
+ <div class="adm"><h4>🎭 Donner un combattant</h4><div class="arow"><select id="admSp" style="flex:1;min-width:160px">${dexList().map((sp,i)=>`<option value="${esc(sp.id)}">#${String(i+1).padStart(2,'0')} ${esc(sp.name)} · ${RAR[rarOf(sp)].n}</option>`).join('')}</select><button id="admSpMe">À moi</button><button class="primary" id="admSpAll">À tous</button></div>
   <div class="note" style="margin-top:6px">Ou clique sur 🎭 à côté d’un joueur ci-dessous. S’il l’a déjà, il gagne une ⭐.</div></div>
  <div class="adm"><h4>👥 Donner / retirer à un joueur</h4><div class="arow" style="margin-bottom:6px"><input type="text" id="admMsg" maxlength="80" placeholder="Message pour le joueur (facultatif)"></div><div id="admList" class="note">Chargement des joueurs…</div></div>`;
  const c=document.createElement('button');c.className='opt cancel';c.textContent='Fermer';c.onclick=()=>{$('#modal').classList.add('hidden');title()};box.appendChild(c);
