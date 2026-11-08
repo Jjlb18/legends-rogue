@@ -327,8 +327,8 @@ button.link{background:none;border:none;color:var(--dim);font-family:'VT323',mon
         <div><label>Type 2</label><select id="edT2"></select></div>
       </div>
       <div class="fld"><label>Rareté</label>
-        <select id="edRar"><option value="common">⚪ Commune</option><option value="rare">🔵 Rare</option><option value="epic">🟣 Épique</option><option value="legendary">🟡 Légendaire</option><option value="secret">🌈 Secret</option></select>
-        <div class="note" style="margin-top:4px">Plus c’est rare : moins on le croise, plus il coûte cher en début de partie et plus il est dur à recruter. Les 🟡 légendaires apparaissent en combat à partir de la vague 8 (très rarement) ou dans les œufs. Les 🌈 secrets s’obtiennent <b>uniquement dans les œufs</b> (1 chance sur 250).</div>
+        <select id="edRar"><option value="starter">🟢 Starter</option><option value="common">⚪ Commune</option><option value="rare">🔵 Rare</option><option value="epic">🟣 Épique</option><option value="legendary">🟡 Légendaire</option><option value="secret">🌈 Secret</option></select>
+        <div class="note" style="margin-top:4px">🟢 Starter : disponible dès le début pour tous les joueurs. Les autres doivent être recrutés ou éclos pour être débloqués. Plus c’est rare : moins on le croise, plus il coûte cher en début de partie et plus il est dur à recruter. Les 🟡 légendaires apparaissent en combat à partir de la vague 8 (très rarement) ou dans les œufs. Les 🌈 secrets s’obtiennent <b>uniquement dans les œufs</b> (1 chance sur 250).</div>
       </div>
       <div class="fld"><label>Stats de base <span id="edBst"></span></label>
         <div id="edStats"></div>
@@ -462,7 +462,7 @@ const ROSTER=[
 ['lincoln','Abraham Lincoln','🎩',['Politics'],75,65,70,50],
 ['chaplin','Charlie Chaplin','🎬',['Art','Sport'],55,60,55,85]];
 const SPECIES={},DEFAULTS=[],ORIG={};
-const DEF_RAR={hercules:'legendary',davinci:'legendary',tesla:'epic',cleopatra:'epic',genghis:'epic',caesar:'epic',mozart:'epic',
+const DEF_RAR={archimedes:'starter',socrates:'starter',edison:'starter',bach:'starter',suntzu:'starter',vangogh:'starter',ruth:'starter',frida:'starter',hercules:'legendary',davinci:'legendary',tesla:'epic',cleopatra:'epic',genghis:'epic',caesar:'epic',mozart:'epic',
  napoleon:'rare',joan:'rare',curie:'rare',newton:'rare',beethoven:'rare',houdini:'rare',shakespeare:'rare',einstein:'rare',rasputin:'rare'};
 ROSTER.forEach(r=>{const s={id:r[0],name:r[1],emoji:r[2],types:r[3],rarity:DEF_RAR[r[0]]||'common',base:{hp:r[4],atk:r[5],def:r[6],spd:r[7]},moves:genMoves(r[3])};SPECIES[s.id]=s;ORIG[s.id]=s;DEFAULTS.push(s)});
 let overrides=LS.get('lr_overrides',{});
@@ -473,9 +473,12 @@ let settings=Object.assign({useDefaults:true,fast:false},LS.get('lr_settings',{}
 let rosterOpts=Object.assign({useDefaults:true},LS.get('lr_rosteropts',{}));
 const SPEED=()=>settings.fast?.45:1;
 const bst=s=>s.base.hp+s.base.atk+s.base.def+s.base.spd;
-const RAR={common:{n:'Commune',c:'#9ca3af',w:100,cost:0,catch:1},rare:{n:'Rare',c:'#3b82f6',w:40,cost:1,catch:.8},
+const RAR={starter:{n:'Starter',c:'#22c55e',w:100,cost:0,catch:1},common:{n:'Commune',c:'#9ca3af',w:100,cost:0,catch:1},rare:{n:'Rare',c:'#3b82f6',w:40,cost:1,catch:.8},
  epic:{n:'Épique',c:'#a855f7',w:18,cost:2,catch:.6},legendary:{n:'Légendaire',c:'#f59e0b',w:6,cost:3,catch:.4},secret:{n:'Secret',c:'#ff4fd8',w:0,cost:4,catch:.25}};
 const LOCKED_R=['legendary','secret'];
+// a fighter can start a run if its rarity is Starter or the player unlocked it (recruited or hatched)
+function canStart(s,g){if(rarOf(s)==='starter'||g.unlocked.includes(s.id))return true;
+ return !rosterAll().some(x=>rarOf(x)==='starter')&&rarOf(s)==='common'}
 const rarOf=s=>s&&RAR[s.rarity]?s.rarity:(bst(s)>=300?'legendary':bst(s)>=275?'epic':bst(s)>=258?'rare':'common');
 const rtag=s=>{const k=rarOf(s),r=RAR[k];return `<span class="rt ${k==='secret'?'sec':''}" style="--rc:${r.c}">${k==='secret'?'🌈 ':''}${r.n}</span>`};
 const costOf=s=>clamp(Math.round((bst(s)-180)/30)+RAR[rarOf(s)].cost,1,9);
@@ -571,12 +574,12 @@ let picks=[];const BUDGET=10;
 function starterScreen(){picks=[];show('s-starter');renderStarters()}
 function renderStarters(){const used=picks.reduce((a,id)=>a+costOf(SPECIES[id]),0);
  $('#stBudget').innerHTML=`Points ${used}/${BUDGET}<span class="pips">${Array.from({length:BUDGET},(_,i)=>`<span class="pip ${i<used?'on':''}"></span>`).join('')}</span>`;
- $('#stChosen').innerHTML=picks.length?picks.map(id=>`<div class="mini"><span class="av">${av(SPECIES[id])}</span>${esc(SPECIES[id].name)}</div>`).join(''):'<span class="empty">Touche les combattants ci-dessous pour les ajouter à ton équipe (6 max). Les plus forts coûtent plus de points.</span>';
+ const gg0=gacha(),list=[...customs,...(rosterOpts.useDefaults||!customs.length?DEFAULTS:[])].map((s,i)=>[s,i]).sort((a,b)=>(canStart(b[0],gg0)-canStart(a[0],gg0))||a[1]-b[1]).map(x=>x[0]);
+ $('#stChosen').innerHTML=picks.length?picks.map(id=>`<div class="mini"><span class="av">${av(SPECIES[id])}</span>${esc(SPECIES[id].name)}</div>`).join(''):`<span class="empty">Touche les combattants ci-dessous pour les ajouter à ton équipe (6 max). Les plus forts coûtent plus de points. 🔓 Débloque les autres en les recrutant en combat ou en les faisant éclore : ${list.filter(s=>canStart(s,gacha())).length} / ${list.length} débloqués.</span>`;
  $('#stGo').disabled=!picks.length;
- const list=[...customs,...(rosterOpts.useDefaults||!customs.length?DEFAULTS:[])];
  const gg=gacha();
- $('#stGrid').innerHTML=list.map(s=>{const sel=picks.includes(s.id),c=costOf(s),lk=LOCKED_R.includes(rarOf(s))&&!gg.unlocked.includes(s.id),can=!lk&&(sel||(used+c<=BUDGET&&picks.length<6)),st=Math.min(5,gg.stars[s.id]||0);
-  return `<div class="card ${rarOf(s)} ${lk?'locked':''} ${sel?'sel':''} ${can?'':'no'}" style="--rc:${RAR[rarOf(s)].c}" data-id="${esc(s.id)}">${customs.includes(s)?'<span class="star">★</span>':''}<span class="cost">${c}</span>${st?`<span class="stars">⭐${st}</span>`:''}<div class="av">${av(s)}</div><div class="nm">${esc(s.name)}</div><div>${s.types.map(tb).join('')}</div><div style="margin-top:4px">${rtag(s)}</div>${lk?`<span class="lockt">🔒 ${rarOf(s)==='secret'?'Œufs uniquement':'Recrute-le ou tire-le'}</span>`:''}</div>`}).join('');
+ $('#stGrid').innerHTML=list.map(s=>{const sel=picks.includes(s.id),c=costOf(s),lk=!canStart(s,gg),can=!lk&&(sel||(used+c<=BUDGET&&picks.length<6)),st=Math.min(5,gg.stars[s.id]||0);
+  return `<div class="card ${rarOf(s)} ${lk?'locked':''} ${sel?'sel':''} ${can?'':'no'}" style="--rc:${RAR[rarOf(s)].c}" data-id="${esc(s.id)}">${customs.includes(s)?'<span class="star">★</span>':''}<span class="cost">${c}</span>${st?`<span class="stars">⭐${st}</span>`:''}<div class="av">${av(s)}</div><div class="nm">${esc(s.name)}</div><div>${s.types.map(tb).join('')}</div><div style="margin-top:4px">${rtag(s)}</div>${lk?`<span class="lockt">🔒 ${rarOf(s)==='secret'?'Œufs uniquement':'Recrute-le ou fais-le éclore'}</span>`:''}</div>`}).join('');
  $('#stGrid').querySelectorAll('.card').forEach(el=>el.onclick=()=>{if(el.classList.contains('locked'))return toast(rarOf(SPECIES[el.dataset.id])==='secret'?'🔒 Les secrets s’obtiennent uniquement dans les œufs !':'🔒 Recrute-le en combat ou obtiens-le dans un œuf !');const id=el.dataset.id;const i=picks.indexOf(id);
   if(i>=0)picks.splice(i,1);else{const c=costOf(SPECIES[id]);if(used+c>BUDGET||picks.length>=6)return toast('Pas assez de points');picks.push(id)}renderStarters()})}
 function startRun(){const order=[...BIOMES.keys()].sort(()=>Math.random()-.5);
@@ -671,7 +674,7 @@ async function openTeam(){const i=await choose('Équipe — qui faire entrer ?',
 async function doRecruit(){if(G.bag.contract<=0)return toast('Plus de Contrats !');lockUI();G.bag.contract--;upd();
  const e=G.enemy,n=nmOf(e);await say(`Tu proposes un Contrat à ${n}…`,900);
  const rate=Math.min(.95,(e.boss?.3:1)*RAR[rarOf(SPECIES[e.sid])].catch*(1-.8*e.hp/e.maxhp)+.1);anim('#eSpr','wobble');await sleep(1300*SPEED());
- if(Math.random()<rate){await say(`✍️ ${n} signe le Contrat !`);if(await addToParty(e))await say(`${n} rejoint ton équipe !`);{const g=gacha();if(LOCKED_R.includes(rarOf(SPECIES[e.sid]))&&!g.unlocked.includes(e.sid)){g.unlocked.push(e.sid);setGacha(g);await say(`🔓 ${n} est débloqué comme starter !`)}}await winBattle(true)}
+ if(Math.random()<rate){await say(`✍️ ${n} signe le Contrat !`);if(await addToParty(e))await say(`${n} rejoint ton équipe !`);{const g=gacha();if(!canStart(SPECIES[e.sid],g)){g.unlocked.push(e.sid);setGacha(g);await say(`🔓 ${n} est débloqué ! Tu pourras le choisir au début d’une partie.`)}}await winBattle(true)}
  else{await say(`${n} déchire le Contrat !`);await enemyTurn()}}
 async function addToParty(e){const f=JSON.parse(JSON.stringify(e));f.uid=Math.random().toString(36).slice(2);delete f.boss;calc(f);f.hp=Math.max(1,Math.ceil(e.hp/e.maxhp*f.maxhp));resetSt(f);
  if(G.party.length<6){G.party.push(f);return true}
@@ -746,7 +749,7 @@ function setGacha(g){LS.set('lr_gacha',g)}
 function rollTier(g,atLeastRare){let t;if(g.pity>=PITY-1)t='legendary';else{let x=Math.random()*100;t=TIERS.find(k=>(x-=EGG[k].w)<0)||'common'}
  if(atLeastRare&&t==='common')t='rare';g.pity=t==='legendary'||t==='secret'?0:g.pity+1;return t}
 function rosterAll(){const l=(rosterOpts.useDefaults?DEFAULTS:[]).concat(customs);return l.length?l:DEFAULTS}
-function pickHatch(tier){for(let i=TIERS.indexOf(tier);i>=0;i--){const p=rosterAll().filter(s=>rarOf(s)===TIERS[i]);if(p.length)return pick(p)}return pick(rosterAll())}
+function pickHatch(tier){for(let i=TIERS.indexOf(tier);i>=0;i--){const p=rosterAll().filter(s=>rarOf(s)===TIERS[i]||(TIERS[i]==='common'&&rarOf(s)==='starter'));if(p.length)return pick(p)}return pick(rosterAll())}
 const eggHTML=(t,c='',st='')=>`<div class="egg ${t} ${c}" style="${st}"><i></i></div>`;
 async function gachaTick(boss){const g=gacha();let ready=0;g.eggs.forEach(e=>{if(e.left>0){e.left--;if(!e.left)ready++}});if(boss)g.tickets++;setGacha(g);
  if(boss)await say('🎟️ +1 ticket de tirage !',1000);
@@ -776,7 +779,7 @@ async function doPull(n){const g=gacha();if(g.tickets<n)return;g.tickets-=n;cons
 let hatching=false;
 async function hatchReady(){if(hatching)return;hatching=true;
  try{for(;;){const g=gacha(),egg=g.eggs.find(e=>e.left<=0);if(!egg)break;const sp=pickHatch(egg.tier);g.eggs=g.eggs.filter(e=>e.id!==egg.id);
-  let msg;if(LOCKED_R.includes(rarOf(sp))&&!g.unlocked.includes(sp.id)){g.unlocked.push(sp.id);msg=rarOf(sp)==='secret'?'🌈 INCROYABLE ! Combattant SECRET débloqué ! Tu peux le choisir dans ton équipe.':'🔓 Nouveau légendaire débloqué ! Tu peux le choisir dans ton équipe.'}
+  let msg;if(!canStart(sp,g)){g.unlocked.push(sp.id);msg=rarOf(sp)==='secret'?'🌈 INCROYABLE ! Combattant SECRET débloqué ! Tu peux le choisir dans ton équipe.':rarOf(sp)==='legendary'?'🔓 Nouveau légendaire débloqué ! Tu peux le choisir dans ton équipe.':'🔓 Nouveau combattant débloqué ! Tu peux le choisir dans ton équipe.'}
   else{const n=Math.min(5,(g.stars[sp.id]||0)+1);g.stars[sp.id]=n;msg=`⭐ ${esc(sp.name)} gagne une étoile (${n}/5) : il commencera au niveau ${5+2*n} !`}
   setGacha(g);
   const box=$('#modalBox');box.innerHTML=`<h3>Oh ? Un œuf éclot !</h3><div class="hatch">${eggHTML(egg.tier,'big wob')}</div>`;$('#modal').classList.remove('hidden');
@@ -833,7 +836,8 @@ function help(){choose('Comment jouer',[],{cancel:'Compris !',body:`<div class="
 • Après chaque victoire, choisis 1 récompense sur 3 : potions, Contrats, Super Bonbons, boosts de stats, nouvelles attaques…<br>
 • Affaiblis un adversaire, puis utilise un <b>📝 Contrat</b> pour le recruter.<br>
 • Profite des types (voir la Table des types) pour frapper fort.<br>
-• Chaque combattant a une rareté : ⚪ Commune, 🔵 Rare, 🟣 Épique ou 🟡 Légendaire. Plus il est rare, moins on le croise et plus il est dur à recruter. Les 🟡 légendaires se croisent très rarement à partir de la vague 8. Les 🌈 <b>secrets</b> (1 chance sur 250) s’obtiennent uniquement dans les œufs de la <b>🥚 machine à tirage</b> ! Recruter ou faire éclore un légendaire le débloque comme starter.<br>
+• Au début, seuls les combattants 🟢 <b>Starter</b> sont disponibles. Pour débloquer les autres, <b>recrute-les</b> avec un 📝 Contrat ou <b>fais-les éclore</b> dans un œuf !<br>
+• Chaque combattant a une rareté : 🟢 Starter, ⚪ Commune, 🔵 Rare, 🟣 Épique ou 🟡 Légendaire. Plus il est rare, moins on le croise et plus il est dur à recruter. Les 🟡 légendaires se croisent très rarement à partir de la vague 8. Les 🌈 <b>secrets</b> (1 chance sur 250) s’obtiennent uniquement dans les œufs de la <b>🥚 machine à tirage</b> ! Recruter ou faire éclore un légendaire le débloque comme starter.<br>
 • Tickets 🎟️ : tu en gagnes 1 à chaque boss vaincu. Les œufs éclosent après quelques vagues jouées. Un combattant déjà obtenu gagne une ⭐ (il commence 2 niveaux plus haut).<br>
 • Tes combattants apprennent de nouvelles attaques en montant de niveau.<br>
 • Un combattant K.O. le reste jusqu’à ce que tu utilises un Rappel. Si tout le monde est K.O., la partie est finie. Jusqu’où iras-tu ?<br><br>
