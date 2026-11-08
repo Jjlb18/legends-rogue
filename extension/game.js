@@ -6,8 +6,10 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
- set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}},
- del(k){try{localStorage.removeItem(k)}catch(e){}}};
+ set(k,v){try{localStorage.setItem(k,JSON.stringify(v));if(SYNC_KEYS.includes(k))queueSync();return true}catch(e){return false}},
+ del(k){try{localStorage.removeItem(k);if(SYNC_KEYS.includes(k))queueSync()}catch(e){}}};
+const SYNC_KEYS=['lr_run','lr_best','lr_species','lr_moves','lr_overrides','lr_settings'];
+let ACC=null;
 function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('show'),1800)}
 
 // ---------- types ----------
@@ -141,7 +143,7 @@ function save(){if(G)LS.set('lr_run',G)}
 
 // ---------- screens ----------
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));$('#'+id).classList.remove('hidden');window.scrollTo(0,0)}
-function title(){show('s-title');$('.parade').innerHTML=['einstein','joan','mozart','cleopatra','tesla'].map(id=>av(SPECIES[id])).join('');const best=LS.get('lr_best',0);$('#best').textContent=best?`Meilleure partie : vague ${best}`:'';
+function title(){show('s-title');$('#acct').innerHTML=ACC?`👤 ${esc(ACC.name||ACC.email)} <button id="acctBtn">Mon compte</button>`:'';if(ACC)$('#acctBtn').onclick=accountMenu;$('#s-title .parade').innerHTML=['einstein','joan','mozart','cleopatra','tesla'].map(id=>av(SPECIES[id])).join('');const best=LS.get('lr_best',0);$('#best').textContent=best?`Meilleure partie : vague ${best}`:'';
  $('#tContinue').classList.toggle('hidden',!LS.get('lr_run',null))}
 
 // ---------- modal ----------
@@ -402,7 +404,80 @@ $('#edImport').onclick=()=>{try{const d=JSON.parse($('#edIO').value);(d.moves||[
  let n=0;(d.species||[]).forEach(s=>{if(s&&s.id&&s.name&&Array.isArray(s.types)&&s.base&&Array.isArray(s.moves)){const i=customs.findIndex(x=>x.id===s.id);if(i>=0)customs[i]=s;else customs.push(s);SPECIES[s.id]=s;n++}});
  Object.entries(d.overrides||{}).forEach(([id,s])=>{if(ORIG[id]&&s&&s.name&&Array.isArray(s.types)&&s.base&&Array.isArray(s.moves)){overrides[id]=s;applyOv(id);n++}});
  LS.set('lr_species',customs);LS.set('lr_moves',customMoves);LS.set('lr_overrides',overrides);edFillMoves(LEARN_AT.map((_,i)=>$('#em_'+i).value));edList();toast(`${n} combattant(s) importé(s)`)}catch(e){toast('Ce texte n’est pas valide')}};
-title();
+// ---------- accounts (Firebase, via its web APIs) ----------
+const FIREBASE={apiKey:'AIzaSyDkiO0QIkjVw4uX_2FbCWa6d00AnqAlMn0',projectId:'legends-rogue'};
+// the project ID is read from the login token when not set above
+function jwtAud(t){try{return JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).aud||''}catch(e){return ''}}
+let syncT=null,syncing=false,syncAgain=false;
+const CLOUD=t=>{$('#cloud').textContent=t};
+function saveSession(){try{localStorage.setItem('lr_session',JSON.stringify(ACC))}catch(e){}}
+function dropSession(){ACC=null;try{localStorage.removeItem('lr_session')}catch(e){}}
+const AERR={EMAIL_EXISTS:'Cet e-mail a déjà un compte. Connecte-toi plutôt.',EMAIL_NOT_FOUND:'E-mail ou mot de passe incorrect.',INVALID_PASSWORD:'E-mail ou mot de passe incorrect.',
+ INVALID_LOGIN_CREDENTIALS:'E-mail ou mot de passe incorrect.',WEAK_PASSWORD:'Mot de passe trop court (6 caractères minimum).',INVALID_EMAIL:'Adresse e-mail invalide.',MISSING_PASSWORD:'Écris ton mot de passe.',
+ TOO_MANY_ATTEMPTS_TRY_LATER:'Trop d’essais. Réessaie dans quelques minutes.',USER_DISABLED:'Ce compte a été désactivé.',OPERATION_NOT_ALLOWED:'La connexion par e-mail n’est pas activée dans Firebase.',
+ CONFIGURATION_NOT_FOUND:'Firebase Authentication n’est pas encore activé.',CREDENTIAL_TOO_OLD_LOGIN_AGAIN:'Pour ça, déconnecte-toi puis reconnecte-toi d’abord.',
+ PERMISSION_DENIED:'La base de données refuse l’accès (vérifie les règles Firestore).',NOT_FOUND:'La base de données Firestore n’existe pas encore.',
+ TOKEN_EXPIRED:'Session expirée, reconnecte-toi.',USER_NOT_FOUND:'Compte introuvable, reconnecte-toi.',INVALID_REFRESH_TOKEN:'Session expirée, reconnecte-toi.'};
+function errMsg(e){if(e instanceof TypeError)return 'Pas de connexion internet.';const m=String(e&&e.message||e);for(const k in AERR)if(m.startsWith(k))return AERR[k];return 'Erreur : '+m}
+async function fbAuth(path,body){const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:${path}?key=${FIREBASE.apiKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+ const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error&&j.error.message||'HTTP '+r.status);return j}
+async function refreshTok(){const r=await fetch(`https://securetoken.googleapis.com/v1/token?key=${FIREBASE.apiKey}`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=refresh_token&refresh_token='+encodeURIComponent(ACC.refreshToken)});
+ const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error&&j.error.message||'HTTP '+r.status);ACC.idToken=j.id_token;ACC.refreshToken=j.refresh_token;ACC.exp=Date.now()+(+j.expires_in-60)*1000;saveSession()}
+async function idTok(){if(!ACC.idToken||Date.now()>ACC.exp)await refreshTok();return ACC.idToken}
+const docURL=()=>`https://firestore.googleapis.com/v1/projects/${FIREBASE.projectId||jwtAud(ACC.idToken)}/databases/(default)/documents/players/${ACC.uid}`;
+async function fsErr(r){const j=await r.json().catch(()=>({}));return new Error(j.error&&j.error.status||'HTTP '+r.status)}
+async function cloudLoad(){const r=await fetch(docURL(),{headers:{Authorization:'Bearer '+await idTok()}});if(r.status===404)return null;if(!r.ok)throw await fsErr(r);
+ const f=(await r.json()).fields||{};return{data:f.data?JSON.parse(f.data.stringValue):{},name:f.name&&f.name.stringValue}}
+function localData(){const d={};SYNC_KEYS.forEach(k=>{try{const v=localStorage.getItem(k);if(v!=null)d[k]=v}catch(e){}});return d}
+async function cloudSave(keep){const body=JSON.stringify({fields:{data:{stringValue:JSON.stringify(localData())},name:{stringValue:ACC.name||''},updated:{timestampValue:new Date().toISOString()}}});
+ const r=await fetch(docURL(),{method:'PATCH',keepalive:!!keep&&body.length<60000,headers:{Authorization:'Bearer '+await idTok(),'Content-Type':'application/json'},body});if(!r.ok)throw await fsErr(r)}
+function queueSync(){if(!ACC)return;CLOUD('☁️ …');clearTimeout(syncT);syncT=setTimeout(doSync,1500)}
+async function doSync(keep){clearTimeout(syncT);syncT=null;if(!ACC)return;if(syncing){syncAgain=true;return}syncing=true;
+ try{await cloudSave(keep);CLOUD('☁️ Sauvegardé')}catch(e){CLOUD('⚠️ Pas synchronisé');console.warn(e)}syncing=false;if(syncAgain){syncAgain=false;await doSync()}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&ACC&&syncT)doSync(true)});
+function reloadState(){customMoves.forEach(m=>delete MOVES[m.id]);customMoves=LS.get('lr_moves',[]);customMoves.forEach(m=>MOVES[m.id]=m);
+ customs.forEach(s=>delete SPECIES[s.id]);customs=LS.get('lr_species',[]);customs.forEach(s=>SPECIES[s.id]=s);
+ Object.keys(ORIG).forEach(id=>{SPECIES[id]=ORIG[id];DEFAULTS[DEFAULTS.findIndex(x=>x.id===id)]=ORIG[id]});
+ overrides=LS.get('lr_overrides',{});Object.keys(overrides).forEach(id=>{if(ORIG[id])applyOv(id);else delete overrides[id]});
+ settings=Object.assign({useDefaults:true,fast:false},LS.get('lr_settings',{}))}
+async function pullCloud(){const c=await cloudLoad();
+ if(c){SYNC_KEYS.forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});for(const k in c.data)if(SYNC_KEYS.includes(k))try{localStorage.setItem(k,c.data[k])}catch(e){}if(c.name&&!ACC.name)ACC.name=c.name}
+ else await cloudSave();
+ reloadState();saveSession();CLOUD('☁️ Sauvegardé')}
+function setSession(j,name){ACC={uid:j.localId,email:j.email,name:name||j.displayName||'',idToken:j.idToken,refreshToken:j.refreshToken,exp:Date.now()+(+j.expiresIn-60)*1000};saveSession()}
+let aMode='in';
+function aMsg(t,ok){const e=$('#aErr');e.textContent=t;e.classList.toggle('ok',!!ok)}
+function authMode(m){aMode=m;$('#aTabIn').classList.toggle('on',m==='in');$('#aTabUp').classList.toggle('on',m==='up');$('#aNameF').classList.toggle('hidden',m==='in');
+ $('#aGo').textContent=m==='in'?'Se connecter':'Créer mon compte';$('#aForgot').classList.toggle('hidden',m!=='in');$('#aPass').autocomplete=m==='in'?'current-password':'new-password';aMsg('')}
+function showAuth(){show('s-auth');$('#authParade').innerHTML=['napoleon','curie','mozart','frida','owens'].map(id=>av(SPECIES[id])).join('');authMode(aMode)}
+function enterGame(){title()}
+$('#aTabIn').onclick=()=>authMode('in');$('#aTabUp').onclick=()=>authMode('up');
+$('#aForm').onsubmit=async e=>{e.preventDefault();const email=$('#aEmail').value.trim(),pw=$('#aPass').value,name=$('#aName').value.trim();
+ if(aMode==='up'&&!name)return aMsg('Choisis un pseudo.');
+ $('#aGo').disabled=true;aMsg(aMode==='up'?'Création du compte…':'Connexion…',true);
+ try{if(aMode==='up'){const j=await fbAuth('signUp',{email,password:pw,returnSecureToken:true});setSession(j,name);fbAuth('update',{idToken:j.idToken,displayName:name,returnSecureToken:false}).catch(()=>{})}
+  else setSession(await fbAuth('signInWithPassword',{email,password:pw,returnSecureToken:true}));
+  await pullCloud();$('#aPass').value='';aMsg('');enterGame()}
+ catch(x){dropSession();CLOUD('');aMsg(errMsg(x))}
+ $('#aGo').disabled=false};
+$('#aForgot').onclick=async()=>{const email=$('#aEmail').value.trim();if(!email)return aMsg('Écris ton e-mail d’abord.');
+ try{await fbAuth('sendOobCode',{requestType:'PASSWORD_RESET',email});aMsg('E-mail envoyé ! Regarde ta boîte de réception (et les spams).',true)}catch(x){aMsg(errMsg(x))}};
+function clearLocal(){SYNC_KEYS.forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});reloadState();G=null;busy=false}
+async function logout(){if(syncT||syncing){CLOUD('☁️ …');await doSync()}dropSession();clearLocal();CLOUD('');showAuth()}
+async function accountMenu(){const v=await choose('Mon compte',[{value:'out',label:'Se déconnecter'},{value:'del',label:'Supprimer mon compte'}],{cancel:'Retour',
+ body:`<div class="modtxt">Pseudo : ${esc(ACC.name||'—')}<br>E-mail : ${esc(ACC.email||'')}<br><br>Ta progression est sauvegardée en ligne et te suit sur tous tes appareils.</div>`});
+ if(v==='out')return logout();
+ if(v==='del'){const ok=await choose('Supprimer ton compte ? Ta partie, ton record et tes combattants seront effacés pour toujours.',[{value:1,label:'Oui, supprimer'},{value:0,label:'Annuler'}],{cols:2});if(!ok)return;
+  try{const t=await idTok();const r=await fetch(docURL(),{method:'DELETE',headers:{Authorization:'Bearer '+t}});if(!r.ok&&r.status!==404)throw await fsErr(r);await fbAuth('delete',{idToken:t})}
+  catch(x){return toast(errMsg(x))}
+  dropSession();clearLocal();CLOUD('');showAuth();aMsg('Compte supprimé.',true)}}
+async function boot(){if(!FIREBASE.apiKey){showAuth();aMsg('Les comptes ne sont pas encore configurés (clés Firebase manquantes).');$('#aGo').disabled=true;return}
+ const s=LS.get('lr_session',null);
+ if(s&&s.refreshToken){ACC=s;CLOUD('☁️ …');
+  try{await refreshTok();await pullCloud();return enterGame()}
+  catch(e){if(e instanceof TypeError){CLOUD('⚠️ Hors ligne');return enterGame()}dropSession();CLOUD('')}}
+ showAuth()}
+boot();
 // convert pictures saved by the older version into pixel sprites
 (async()=>{let c1=false,c2=false;for(const s of customs)if(s.img&&!s.px){try{s.img=await imgPx(s.img);s.px=true;s.pv=2;c1=true}catch(e){}}
  for(const id in overrides){const s=overrides[id];if(s.img&&!s.px){try{s.img=await imgPx(s.img);s.px=true;s.pv=2;c2=true;applyOv(id)}catch(e){}}}

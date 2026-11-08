@@ -159,6 +159,17 @@ summary{cursor:pointer;font-family:'Press Start 2P';font-size:9px;color:var(--ac
 #edIO{width:100%;height:90px;font-size:15px}
 .note{color:var(--dim);font-size:17px;line-height:1.15}
 .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.auth{max-width:400px;margin:24px auto;text-align:center}
+.auth h1{font-size:28px;color:var(--acc);text-shadow:4px 4px 0 #b5462a,8px 8px 0 #0008;line-height:1.3;margin-bottom:22px}
+.tabs{display:flex;gap:6px;margin-bottom:12px}.tabs button{flex:1}.tabs button.on{background:var(--acc);color:#1a1720}
+#aForm{text-align:left;background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px}
+#aForm input{width:100%}
+#aErr{color:#f87171;min-height:24px;font-size:19px;margin-bottom:8px;line-height:1.1}#aErr.ok{color:var(--good)}
+#aGo{width:100%;font-size:12px;padding:14px}
+button.link{background:none;border:none;color:var(--dim);font-family:'VT323',monospace;font-size:18px;text-decoration:underline;margin-top:8px;width:100%}
+#acct{margin-top:14px;color:var(--dim);font-size:20px}#acct button{padding:6px 8px;font-size:9px;margin-left:6px}
+#cloud{position:fixed;top:4px;left:8px;font-size:16px;color:var(--dim);z-index:40;pointer-events:none}
+#s-load{text-align:center;padding:90px 10px;font-family:'Press Start 2P',monospace;font-size:12px;color:var(--dim)}
 #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--acc);color:#1a1720;padding:10px 16px;border-radius:8px;font-family:'Press Start 2P';font-size:10px;z-index:60;transition:opacity .3s;opacity:0;pointer-events:none}
 #toast.show{opacity:1}
 @media (max-width:700px){
@@ -175,7 +186,26 @@ summary{cursor:pointer;font-family:'Press Start 2P';font-size:9px;color:var(--ac
 <body>
 <div id="app">
 
-<section id="s-title" class="screen">
+<section id="s-load" class="screen">Chargement…</section>
+
+<section id="s-auth" class="screen hidden">
+  <div class="auth">
+    <div class="parade" id="authParade"></div>
+    <h1>LEGENDS<br>ROGUE</h1>
+    <div class="tabs"><button type="button" id="aTabIn" class="on">Se connecter</button><button type="button" id="aTabUp">Créer un compte</button></div>
+    <form id="aForm">
+      <div class="fld hidden" id="aNameF"><label>Pseudo</label><input type="text" id="aName" maxlength="20" autocomplete="nickname"></div>
+      <div class="fld"><label>E-mail</label><input type="email" id="aEmail" autocomplete="email" required></div>
+      <div class="fld"><label>Mot de passe (6 caractères min.)</label><input type="password" id="aPass" autocomplete="current-password" required minlength="6"></div>
+      <div id="aErr"></div>
+      <button type="submit" class="primary" id="aGo">Se connecter</button>
+      <button type="button" id="aForgot" class="link">Mot de passe oublié ?</button>
+    </form>
+    <div class="note">Ton compte garde ta partie, ton record et tes combattants. Connecte-toi sur n’importe quel appareil pour continuer là où tu t’es arrêté.</div>
+  </div>
+</section>
+
+<section id="s-title" class="screen hidden">
   <div class="parade"></div>
   <h1>LEGENDS<br>ROGUE</h1>
   <div class="sub">Un roguelite de combat sans fin avec des personnes célèbres</div>
@@ -187,6 +217,7 @@ summary{cursor:pointer;font-family:'Press Start 2P';font-size:9px;color:var(--ac
     <button id="tHelp">Comment jouer</button>
   </div>
   <div id="best"></div>
+  <div id="acct"></div>
 </section>
 
 <section id="s-starter" class="screen hidden">
@@ -284,6 +315,7 @@ summary{cursor:pointer;font-family:'Press Start 2P';font-size:9px;color:var(--ac
 
 <div id="modal" class="hidden"><div id="modalBox"></div></div>
 <div id="toast"></div>
+<div id="cloud"></div>
 
 <script src="game.js"></script>
 </body>
