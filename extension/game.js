@@ -376,7 +376,7 @@ function pickHatch(tier){for(let i=TIERS.indexOf(tier);i>=0;i--){const p=rosterA
 const eggHTML=(t,c='',st='')=>`<div class="egg ${t} ${c}" style="${st}"><i></i></div>`;
 async function gachaTick(boss){const g=gacha();let ready=0;g.eggs.forEach(e=>{if(e.left>0){e.left--;if(!e.left)ready++}});if(boss)g.tickets++;setGacha(g);
  if(boss)await say('🎟️ +1 ticket de tirage !',1000);
- if(ready)await say(ready>1?`🥚 ${ready} œufs sont prêts à éclore ! Touche 🥚 en haut pour les voir.`:'🥚 Un œuf est prêt à éclore ! Touche 🥚 en haut pour le voir.',1400)}
+ const n=gacha().eggs.filter(e=>e.left<=0).length;if(n){await say(n>1?`🥚 Oh ? ${n} œufs éclosent !`:'🥚 Oh ? Un œuf éclot !',900);await hatchReady()}}
 function openGacha(res){const g=gacha(),box=$('#modalBox');
  const best=res&&TIERS[Math.max(...res.map(t=>TIERS.indexOf(t)))];
  box.innerHTML=`<h3>🎰 Machine à tirage</h3>
@@ -408,15 +408,23 @@ async function doPull(n){const g=gacha();if(g.tickets<n)return;g.tickets-=n;cons
  if(best!=='common'&&best!=='rare'){const f=document.createElement('div');f.className='flash'+(best==='secret'?' rainbow':best==='legendary'?' gold':'');document.body.appendChild(f);setTimeout(()=>f.remove(),1000)}
  openGacha(res)}
 let hatching=false;
+function hatchEgg(g,egg){const sp=pickHatch(egg.tier);g.eggs=g.eggs.filter(e=>e.id!==egg.id);let msg,r;
+ if(!canStart(sp,g)){g.unlocked.push(sp.id);r='new';msg=rarOf(sp)==='secret'?'⚫ INCROYABLE ! Combattant SECRET débloqué ! Tu peux le choisir dans ton équipe.':rarOf(sp)==='legendary'?'🔓 Nouveau légendaire débloqué ! Tu peux le choisir dans ton équipe.':'🔓 Nouveau combattant débloqué ! Tu peux le choisir dans ton équipe.'}
+ else{const n=Math.min(5,(g.stars[sp.id]||0)+1);g.stars[sp.id]=n;r='star';msg=`⭐ ${esc(sp.name)} gagne une étoile (${n}/5) : il commencera au niveau ${5+2*n} !`}
+ return{sp,msg,r}}
+async function hatchAnim(egg,sp,msg){const box=$('#modalBox');box.innerHTML=`<h3>Oh ? Un œuf éclot !</h3><div class="hatch">${eggHTML(egg.tier,'big wob')}</div>`;$('#modal').classList.remove('hidden');
+ await sleep(1700);const f=document.createElement('div');f.className='flash'+(egg.tier==='secret'?' rainbow':egg.tier==='legendary'?' gold':'');document.body.appendChild(f);setTimeout(()=>f.remove(),1000);
+ await new Promise(r=>{box.innerHTML=`<h3>Un œuf a éclos !</h3><div class="hatch"><div class="av">${av(sp)}</div><div class="nm">${esc(sp.name)}</div><div>${sp.types.map(tb).join('')}${rtag(sp)}</div><div class="modtxt" style="margin-top:12px">${msg}</div></div>`;
+  const b=document.createElement('button');b.className='opt cancel';b.textContent='Super !';b.onclick=()=>{$('#modal').classList.add('hidden');r()};box.appendChild(b)})}
+// more than 2 eggs at once: no animation except legendary/secret, one summary screen instead
 async function hatchReady(){if(hatching)return;hatching=true;
- try{for(;;){const g=gacha(),egg=g.eggs.find(e=>e.left<=0);if(!egg)break;const sp=pickHatch(egg.tier);g.eggs=g.eggs.filter(e=>e.id!==egg.id);
-  let msg;if(!canStart(sp,g)){g.unlocked.push(sp.id);msg=rarOf(sp)==='secret'?'⚫ INCROYABLE ! Combattant SECRET débloqué ! Tu peux le choisir dans ton équipe.':rarOf(sp)==='legendary'?'🔓 Nouveau légendaire débloqué ! Tu peux le choisir dans ton équipe.':'🔓 Nouveau combattant débloqué ! Tu peux le choisir dans ton équipe.'}
-  else{const n=Math.min(5,(g.stars[sp.id]||0)+1);g.stars[sp.id]=n;msg=`⭐ ${esc(sp.name)} gagne une étoile (${n}/5) : il commencera au niveau ${5+2*n} !`}
-  setGacha(g);
-  const box=$('#modalBox');box.innerHTML=`<h3>Oh ? Un œuf éclot !</h3><div class="hatch">${eggHTML(egg.tier,'big wob')}</div>`;$('#modal').classList.remove('hidden');
-  await sleep(1700);const f=document.createElement('div');f.className='flash'+(egg.tier==='secret'?' rainbow':egg.tier==='legendary'?' gold':'');document.body.appendChild(f);setTimeout(()=>f.remove(),1000);
-  await new Promise(r=>{box.innerHTML=`<h3>Un œuf a éclos !</h3><div class="hatch"><div class="av">${av(sp)}</div><div class="nm">${esc(sp.name)}</div><div>${sp.types.map(tb).join('')}${rtag(sp)}</div><div class="modtxt" style="margin-top:12px">${msg}</div></div>`;
-   const b=document.createElement('button');b.className='opt cancel';b.textContent='Super !';b.onclick=()=>{$('#modal').classList.add('hidden');r()};box.appendChild(b)})}}
+ try{const ready=gacha().eggs.filter(e=>e.left<=0),fast=ready.length>2,quick=[],special=[];
+  for(const egg of ready){const g=gacha();if(!g.eggs.some(e=>e.id===egg.id))continue;const h=hatchEgg(g,egg);setGacha(g);
+   if(fast&&!LOCKED_R.includes(egg.tier)&&!LOCKED_R.includes(rarOf(h.sp)))quick.push({egg,...h});else special.push({egg,...h})}
+  if(quick.length)await new Promise(res=>{const box=$('#modalBox');
+   box.innerHTML=`<h3>🐣 ${quick.length} œufs ont éclos !</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px 10px">${quick.map(q=>`<div class="mem gift"><div class="av">${av(q.sp)}</div><div>${esc(q.sp.name)} ${rtag(q.sp)}<br><small>${q.r==='new'?'🔓 Débloqué !':`⭐ ${Math.min(5,gacha().stars[q.sp.id]||0)}/5`}</small></div></div>`).join('')}</div>${special.length?`<div class="modtxt" style="margin-top:10px">✨ Et ${special.length>1?special.length+' œufs spéciaux arrivent':'un œuf spécial arrive'}…</div>`:''}`;
+   const b=document.createElement('button');b.className='opt cancel';b.textContent=special.length?'Suite !':'Super !';b.onclick=()=>{$('#modal').classList.add('hidden');res()};box.appendChild(b);$('#modal').classList.remove('hidden')});
+  for(const h of special)await hatchAnim(h.egg,h.sp,h.msg)}
  finally{hatching=false}
  if(!$('#s-title').classList.contains('hidden'))title();else if(!$('#s-battle').classList.contains('hidden')&&G)upd()}
 // ---------- gifts & admin panel ----------
