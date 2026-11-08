@@ -130,6 +130,12 @@ table.tc{border-collapse:collapse;margin:auto;font-size:18px}
 table.tc td,table.tc th{border:1px solid var(--line);padding:3px 5px;text-align:center;min-width:30px}
 table.tc th{font-weight:normal}
 .x2{background:#14532d;color:#86efac}.x05{background:#4c1d1d;color:#fca5a5}
+.tcs{display:grid;gap:6px}
+.tcr{display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;align-items:center;background:var(--panel2);border-radius:8px;padding:8px 10px}
+.tcr .tb{font-size:8px;padding:4px 6px}.tct .tb{font-size:9px;padding:6px 8px}
+.tcl{font-size:17px;margin-right:4px}.tcl.good{color:var(--good)}.tcl.bad{color:#f87171}
+.tch{background:none;padding:0 10px;font-size:18px;color:var(--dim)}
+@media (max-width:500px){.tcr{grid-template-columns:80px 1fr 1fr;gap:4px;padding:6px}.tcr .tb{font-size:7px;padding:3px 4px}}
 /* editor */
 .ed-cols{display:grid;grid-template-columns:1.2fr 1fr;gap:12px}
 .pane{background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:14px}

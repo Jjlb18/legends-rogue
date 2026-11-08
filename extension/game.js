@@ -347,9 +347,9 @@ function continueRun(){const g=LS.get('lr_run',null);if(!g)return title();g.part
  if(!G.enemy||!SPECIES[G.enemy.sid])G.enemy=genEnemy();show('s-battle');renderBattle(true);showMain()}
 
 // ---------- info modals ----------
-function typeChart(){let h='<table class="tc"><tr><th>ATQ ↓ / DÉF →</th>'+TYPES.map(t=>`<th>${tb(t)}</th>`).join('')+'</tr>';
- TYPES.forEach(a=>{h+=`<tr><th>${tb(a)}</th>`+TYPES.map(d=>{const e=eff(a,[d]);return `<td class="${e>1?'x2':e<1?'x05':''}">${e>1?'2×':e<1?'½':''}</td>`}).join('')+'</tr>'});
- choose('Table des types',[],{body:h+'</table><div class="note" style="margin-top:10px">Une attaque du même type que le combattant fait 1,5× plus de dégâts.</div>',cancel:'Fermer'})}
+function typeChart(){const h=TYPES.map(t=>{const weak=TYPES.filter(d=>STRONG[d].includes(t));
+ return `<div class="tcr"><div class="tct">${tb(t)}</div><div>${STRONG[t].map(tb).join('')}</div><div>${weak.map(tb).join('')}</div></div>`}).join('');
+ choose('Table des types',[],{body:`<div class="tcs"><div class="tcr tch"><div>Type</div><div class="tcl good">💪 Fort contre</div><div class="tcl bad">💥 Faible contre</div></div>${h}</div><div class="note" style="margin-top:12px">💪 = ton attaque fait <b>2× plus</b> de dégâts.<br>💥 = ces types te font <b>2× plus</b> de dégâts.<br>Une attaque du même type que ton combattant fait aussi <b>1,5× plus</b> de dégâts.</div>`,cancel:'Fermer'})}
 function help(){choose('Comment jouer',[],{cancel:'Compris !',body:`<div class="modtxt">
 • Dépense 10 points pour choisir jusqu’à 6 combattants. Les plus forts coûtent plus cher.<br>
 • Combats vague après vague. Toutes les 10 vagues, un <b>Boss</b> avec beaucoup de PV t’attend ; le battre soigne toute ton équipe.<br>
