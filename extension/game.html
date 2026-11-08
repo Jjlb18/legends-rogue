@@ -165,14 +165,15 @@ table.tc th{font-weight:normal}
 .flash{position:fixed;inset:0;background:#fff;z-index:70;animation:fl .9s forwards;pointer-events:none}.flash.gold{background:#ffcf4a}@keyframes fl{to{opacity:0}}
 .hatch{text-align:center;padding:16px 0}
 .hatch .av img{width:160px;height:160px}
+.hatch .gift .av{width:64px}.hatch .gift .av img{width:60px;height:60px}
 .hatch .nm{font-size:30px;margin:10px 0 6px}
 .card.locked .av img{filter:brightness(0) drop-shadow(0 0 6px #f59e0b)}
 .card .lockt{display:block;margin-top:4px;font-size:15px;color:#f59e0b}
 .card .stars{position:absolute;top:24px;right:6px;font-size:12px;color:var(--acc);font-family:'Press Start 2P',monospace}
-.card.secret{box-shadow:0 0 16px #ff4fd8aa}
-.rt.sec{background:linear-gradient(90deg,#ff4f4f,#ffcf4a,#4ade80,#3fa7ff,#c084fc);color:#1a1426;border-color:#fff8}
-.egg.secret{background:linear-gradient(160deg,#ff9a9a,#ffe08a,#9af0b0,#9ad0ff,#e0a8ff);--sp:#ffffffcc;box-shadow:0 0 16px #ff4fd8}
-.flash.rainbow{background:linear-gradient(90deg,#ff4f4f,#ffcf4a,#4ade80,#3fa7ff,#c084fc)}
+.card.secret{box-shadow:0 0 16px #000,0 0 4px #ffffff44;border-bottom-color:#000}
+.rt.sec{background:#000;color:#fff;border-color:#666}
+.egg.secret{background:#0b0b0f;--sp:#ffffff;border-color:#555;box-shadow:0 0 16px #000,0 0 3px #fff8}
+.flash.rainbow{background:#000;animation-duration:1.4s}
 .adm{background:var(--panel2);border-radius:8px;padding:10px 12px;margin-bottom:10px}
 .adm h4{font-family:'Press Start 2P',monospace;font-weight:normal;font-size:10px;margin:0 0 8px;line-height:1.6}
 .arow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.arow input[type=number]{width:70px}.arow input[type=text]{flex:1;min-width:120px}
@@ -327,8 +328,8 @@ button.link{background:none;border:none;color:var(--dim);font-family:'VT323',mon
         <div><label>Type 2</label><select id="edT2"></select></div>
       </div>
       <div class="fld"><label>Rareté</label>
-        <select id="edRar"><option value="starter">🟢 Starter</option><option value="common">⚪ Commune</option><option value="rare">🔵 Rare</option><option value="epic">🟣 Épique</option><option value="legendary">🟡 Légendaire</option><option value="secret">🌈 Secret</option></select>
-        <div class="note" style="margin-top:4px">🟢 Starter : disponible dès le début pour tous les joueurs. Les autres doivent être recrutés ou éclos pour être débloqués. Plus c’est rare : moins on le croise, plus il coûte cher en début de partie et plus il est dur à recruter. Les 🟡 légendaires apparaissent en combat à partir de la vague 8 (très rarement) ou dans les œufs. Les 🌈 secrets s’obtiennent <b>uniquement dans les œufs</b> (1 chance sur 250).</div>
+        <select id="edRar"><option value="starter">🟢 Starter</option><option value="common">⚪ Commune</option><option value="rare">🔵 Rare</option><option value="epic">🟣 Épique</option><option value="legendary">🟡 Légendaire</option><option value="secret">⚫ Secret</option></select>
+        <div class="note" style="margin-top:4px">🟢 Starter : disponible dès le début pour tous les joueurs. Les autres doivent être recrutés ou éclos pour être débloqués. Plus c’est rare : moins on le croise, plus il coûte cher en début de partie et plus il est dur à recruter. Les 🟡 légendaires apparaissent en combat à partir de la vague 8 (très rarement) ou dans les œufs. Les ⚫ secrets s’obtiennent <b>uniquement dans les œufs</b> (1 chance sur 250).</div>
       </div>
       <div class="fld"><label>Stats de base <span id="edBst"></span></label>
         <div id="edStats"></div>

@@ -165,14 +165,15 @@ table.tc th{font-weight:normal}
 .flash{position:fixed;inset:0;background:#fff;z-index:70;animation:fl .9s forwards;pointer-events:none}.flash.gold{background:#ffcf4a}@keyframes fl{to{opacity:0}}
 .hatch{text-align:center;padding:16px 0}
 .hatch .av img{width:160px;height:160px}
+.hatch .gift .av{width:64px}.hatch .gift .av img{width:60px;height:60px}
 .hatch .nm{font-size:30px;margin:10px 0 6px}
 .card.locked .av img{filter:brightness(0) drop-shadow(0 0 6px #f59e0b)}
 .card .lockt{display:block;margin-top:4px;font-size:15px;color:#f59e0b}
 .card .stars{position:absolute;top:24px;right:6px;font-size:12px;color:var(--acc);font-family:'Press Start 2P',monospace}
-.card.secret{box-shadow:0 0 16px #ff4fd8aa}
-.rt.sec{background:linear-gradient(90deg,#ff4f4f,#ffcf4a,#4ade80,#3fa7ff,#c084fc);color:#1a1426;border-color:#fff8}
-.egg.secret{background:linear-gradient(160deg,#ff9a9a,#ffe08a,#9af0b0,#9ad0ff,#e0a8ff);--sp:#ffffffcc;box-shadow:0 0 16px #ff4fd8}
-.flash.rainbow{background:linear-gradient(90deg,#ff4f4f,#ffcf4a,#4ade80,#3fa7ff,#c084fc)}
+.card.secret{box-shadow:0 0 16px #000,0 0 4px #ffffff44;border-bottom-color:#000}
+.rt.sec{background:#000;color:#fff;border-color:#666}
+.egg.secret{background:#0b0b0f;--sp:#ffffff;border-color:#555;box-shadow:0 0 16px #000,0 0 3px #fff8}
+.flash.rainbow{background:#000;animation-duration:1.4s}
 .adm{background:var(--panel2);border-radius:8px;padding:10px 12px;margin-bottom:10px}
 .adm h4{font-family:'Press Start 2P',monospace;font-weight:normal;font-size:10px;margin:0 0 8px;line-height:1.6}
 .arow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.arow input[type=number]{width:70px}.arow input[type=text]{flex:1;min-width:120px}
@@ -327,8 +328,8 @@ button.link{background:none;border:none;color:var(--dim);font-family:'VT323',mon
         <div><label>Type 2</label><select id="edT2"></select></div>
       </div>
       <div class="fld"><label>Rareté</label>
-        <select id="edRar"><option value="starter">🟢 Starter</option><option value="common">⚪ Commune</option><option value="rare">🔵 Rare</option><option value="epic">🟣 Épique</option><option value="legendary">🟡 Légendaire</option><option value="secret">🌈 Secret</option></select>
-        <div class="note" style="margin-top:4px">🟢 Starter : disponible dès le début pour tous les joueurs. Les autres doivent être recrutés ou éclos pour être débloqués. Plus c’est rare : moins on le croise, plus il coûte cher en début de partie et plus il est dur à recruter. Les 🟡 légendaires apparaissent en combat à partir de la vague 8 (très rarement) ou dans les œufs. Les 🌈 secrets s’obtiennent <b>uniquement dans les œufs</b> (1 chance sur 250).</div>
+        <select id="edRar"><option value="starter">🟢 Starter</option><option value="common">⚪ Commune</option><option value="rare">🔵 Rare</option><option value="epic">🟣 Épique</option><option value="legendary">🟡 Légendaire</option><option value="secret">⚫ Secret</option></select>
+        <div class="note" style="margin-top:4px">🟢 Starter : disponible dès le début pour tous les joueurs. Les autres doivent être recrutés ou éclos pour être débloqués. Plus c’est rare : moins on le croise, plus il coûte cher en début de partie et plus il est dur à recruter. Les 🟡 légendaires apparaissent en combat à partir de la vague 8 (très rarement) ou dans les œufs. Les ⚫ secrets s’obtiennent <b>uniquement dans les œufs</b> (1 chance sur 250).</div>
       </div>
       <div class="fld"><label>Stats de base <span id="edBst"></span></label>
         <div id="edStats"></div>
@@ -474,13 +475,14 @@ let rosterOpts=Object.assign({useDefaults:true},LS.get('lr_rosteropts',{}));
 const SPEED=()=>settings.fast?.45:1;
 const bst=s=>s.base.hp+s.base.atk+s.base.def+s.base.spd;
 const RAR={starter:{n:'Starter',c:'#22c55e',w:100,cost:0,catch:1},common:{n:'Commune',c:'#9ca3af',w:100,cost:0,catch:1},rare:{n:'Rare',c:'#3b82f6',w:40,cost:1,catch:.8},
- epic:{n:'Épique',c:'#a855f7',w:18,cost:2,catch:.6},legendary:{n:'Légendaire',c:'#f59e0b',w:6,cost:3,catch:.4},secret:{n:'Secret',c:'#ff4fd8',w:0,cost:4,catch:.25}};
+ epic:{n:'Épique',c:'#a855f7',w:18,cost:2,catch:.6},legendary:{n:'Légendaire',c:'#f59e0b',w:6,cost:3,catch:.4},secret:{n:'Secret',c:'#000000',w:0,cost:4,catch:.25}};
 const LOCKED_R=['legendary','secret'];
 // a fighter can start a run if its rarity is Starter or the player unlocked it (recruited or hatched)
+function unlockOrStar(g,sid){const sp=SPECIES[sid];if(!sp)return null;if(!canStart(sp,g)){g.unlocked.push(sid);return 'new'}g.stars[sid]=Math.min(5,(g.stars[sid]||0)+1);return 'star'}
 function canStart(s,g){if(rarOf(s)==='starter'||g.unlocked.includes(s.id))return true;
  return !rosterAll().some(x=>rarOf(x)==='starter')&&rarOf(s)==='common'}
 const rarOf=s=>s&&RAR[s.rarity]?s.rarity:(bst(s)>=300?'legendary':bst(s)>=275?'epic':bst(s)>=258?'rare':'common');
-const rtag=s=>{const k=rarOf(s),r=RAR[k];return `<span class="rt ${k==='secret'?'sec':''}" style="--rc:${r.c}">${k==='secret'?'🌈 ':''}${r.n}</span>`};
+const rtag=s=>{const k=rarOf(s),r=RAR[k];return `<span class="rt ${k==='secret'?'sec':''}" style="--rc:${r.c}">${k==='secret'?'⚫ ':''}${r.n}</span>`};
 const costOf=s=>clamp(Math.round((bst(s)-180)/30)+RAR[rarOf(s)].cost,1,9);
 function wpick(list){const tot=list.reduce((a,s)=>a+RAR[rarOf(s)].w,0);let x=Math.random()*tot;for(const s of list)if((x-=RAR[rarOf(s)].w)<0)return s;return list[list.length-1]}
 function allSpecies(){const l=(rosterOpts.useDefaults?DEFAULTS:[]).concat(customs);return l.length?l:DEFAULTS}
@@ -579,7 +581,7 @@ function renderStarters(){const used=picks.reduce((a,id)=>a+costOf(SPECIES[id]),
  $('#stGo').disabled=!picks.length;
  const gg=gacha();
  $('#stGrid').innerHTML=list.map(s=>{const sel=picks.includes(s.id),c=costOf(s),lk=!canStart(s,gg),can=!lk&&(sel||(used+c<=BUDGET&&picks.length<6)),st=Math.min(5,gg.stars[s.id]||0);
-  return `<div class="card ${rarOf(s)} ${lk?'locked':''} ${sel?'sel':''} ${can?'':'no'}" style="--rc:${RAR[rarOf(s)].c}" data-id="${esc(s.id)}">${customs.includes(s)?'<span class="star">★</span>':''}<span class="cost">${c}</span>${st?`<span class="stars">⭐${st}</span>`:''}<div class="av">${av(s)}</div><div class="nm">${esc(s.name)}</div><div>${s.types.map(tb).join('')}</div><div style="margin-top:4px">${rtag(s)}</div>${lk?`<span class="lockt">🔒 ${rarOf(s)==='secret'?'Œufs uniquement':'Recrute-le ou fais-le éclore'}</span>`:''}</div>`}).join('');
+  return `<div class="card ${rarOf(s)} ${lk?'locked':''} ${sel?'sel':''} ${can?'':'no'}" style="--rc:${RAR[rarOf(s)].c}" data-id="${esc(s.id)}">${customs.includes(s)?'<span class="star">★</span>':''}<span class="cost">${c}</span>${st?`<span class="stars">⭐${st}</span>`:''}<div class="av">${av(s)}</div><div class="nm">${lk&&rarOf(s)==='secret'?'???':esc(s.name)}</div><div>${lk&&rarOf(s)==='secret'?'<span class="tb" style="background:#000">???</span>':s.types.map(tb).join('')}</div><div style="margin-top:4px">${rtag(s)}</div>${lk?`<span class="lockt">🔒 ${rarOf(s)==='secret'?'Œufs uniquement':'Recrute-le ou fais-le éclore'}</span>`:''}</div>`}).join('');
  $('#stGrid').querySelectorAll('.card').forEach(el=>el.onclick=()=>{if(el.classList.contains('locked'))return toast(rarOf(SPECIES[el.dataset.id])==='secret'?'🔒 Les secrets s’obtiennent uniquement dans les œufs !':'🔒 Recrute-le en combat ou obtiens-le dans un œuf !');const id=el.dataset.id;const i=picks.indexOf(id);
   if(i>=0)picks.splice(i,1);else{const c=costOf(SPECIES[id]);if(used+c>BUDGET||picks.length>=6)return toast('Pas assez de points');picks.push(id)}renderStarters()})}
 function startRun(){const order=[...BIOMES.keys()].sort(()=>Math.random()-.5);
@@ -760,12 +762,12 @@ function openGacha(res){const g=gacha(),box=$('#modalBox');
  <div class="gacha-wrap"><div class="machine" id="mach"><div class="dome">${['common','rare','common','epic','common','legendary','rare','common','secret','rare','epic','common'].map(t=>eggHTML(t,'mini')).join('')}</div>
   <div class="mbody"><span class="lbl">LEGENDS</span><div class="chute" id="chute">${best?eggHTML(best):''}</div><div class="knob" id="knob"></div></div></div>
   <div class="gside"><div class="tix">🎟️ ${g.tickets} ticket${g.tickets>1?'s':''}</div>
-   <div class="rates">Chances : ⚪ Commun 70 % · 🔵 Rare 22 % · 🟣 Épique 6,1 % · 🟡 Légendaire 1,5 % · 🌈 Secret 0,4 % (1 sur 250)<br>🟡 Légendaire garanti dans ${PITY-g.pity} tirage${PITY-g.pity>1?'s':''} maximum.<br>×10 : au moins un œuf 🔵 Rare ou mieux.</div>
+   <div class="rates">Chances : ⚪ Commun 70 % · 🔵 Rare 22 % · 🟣 Épique 6,1 % · 🟡 Légendaire 1,5 % · ⚫ Secret 0,4 % (1 sur 250)<br>🟡 Légendaire garanti dans ${PITY-g.pity} tirage${PITY-g.pity>1?'s':''} maximum.<br>×10 : au moins un œuf 🔵 Rare ou mieux.</div>
    <div class="btnrow"><button class="primary" id="pull1" ${g.tickets<1?'disabled':''}>Tirer ×1 · 🎟️1</button><button id="pull10" ${g.tickets<10?'disabled':''}>Tirer ×10 · 🎟️10</button></div>
-   <div id="pullRes">${res?res.map((t,i)=>eggHTML(t,'pop',`animation-delay:${i*.08}s`)).join('')+`<div class="lbl" style="color:${RAR[best].c}">${res.length>1?'Meilleur œuf':'Œuf'} : ${EGG[best].n}${best==='secret'?' !!!!! 🌈🌈🌈':best==='legendary'?' !!! ✨':' !'}</div>`:''}</div></div></div>
+   <div id="pullRes">${res?res.map((t,i)=>eggHTML(t,'pop',`animation-delay:${i*.08}s`)).join('')+`<div class="lbl" style="color:${RAR[best].c}">${res.length>1?'Meilleur œuf':'Œuf'} : ${EGG[best].n}${best==='secret'?' !!!!! ⚫⚫⚫':best==='legendary'?' !!! ✨':' !'}</div>`:''}</div></div></div>
  <h3 style="margin-top:16px">Œufs en incubation (${g.eggs.length})</h3>
  <div class="eggs">${g.eggs.length?g.eggs.map(e=>`<div class="eg">${eggHTML(e.tier)}${e.left>0?e.left+' vague'+(e.left>1?'s':''):'Prêt !'}</div>`).join(''):'<span class="note">Aucun œuf pour l’instant.</span>'}</div>
- <div class="note">Les œufs éclosent après des vagues jouées : ⚪ 5 · 🔵 10 · 🟣 15 · 🟡 25 · 🌈 35. Un légendaire ou un secret éclos se débloque comme starter ; un combattant déjà obtenu gagne une ⭐ (+2 niveaux au départ, max 5). Gagne 🎟️ 1 ticket par boss vaincu.</div>`;
+ <div class="note">Les œufs éclosent après des vagues jouées : ⚪ 5 · 🔵 10 · 🟣 15 · 🟡 25 · ⚫ 35. Un légendaire ou un secret éclos se débloque comme starter ; un combattant déjà obtenu gagne une ⭐ (+2 niveaux au départ, max 5). Gagne 🎟️ 1 ticket par boss vaincu.</div>`;
  const c=document.createElement('button');c.className='opt cancel';c.textContent='Fermer';c.onclick=()=>{$('#modal').classList.add('hidden');if(!$('#s-title').classList.contains('hidden'))title()};box.appendChild(c);
  $('#modal').classList.remove('hidden');
  $('#pull1').onclick=()=>doPull(1);$('#pull10').onclick=()=>doPull(10)}
@@ -779,7 +781,7 @@ async function doPull(n){const g=gacha();if(g.tickets<n)return;g.tickets-=n;cons
 let hatching=false;
 async function hatchReady(){if(hatching)return;hatching=true;
  try{for(;;){const g=gacha(),egg=g.eggs.find(e=>e.left<=0);if(!egg)break;const sp=pickHatch(egg.tier);g.eggs=g.eggs.filter(e=>e.id!==egg.id);
-  let msg;if(!canStart(sp,g)){g.unlocked.push(sp.id);msg=rarOf(sp)==='secret'?'🌈 INCROYABLE ! Combattant SECRET débloqué ! Tu peux le choisir dans ton équipe.':rarOf(sp)==='legendary'?'🔓 Nouveau légendaire débloqué ! Tu peux le choisir dans ton équipe.':'🔓 Nouveau combattant débloqué ! Tu peux le choisir dans ton équipe.'}
+  let msg;if(!canStart(sp,g)){g.unlocked.push(sp.id);msg=rarOf(sp)==='secret'?'⚫ INCROYABLE ! Combattant SECRET débloqué ! Tu peux le choisir dans ton équipe.':rarOf(sp)==='legendary'?'🔓 Nouveau légendaire débloqué ! Tu peux le choisir dans ton équipe.':'🔓 Nouveau combattant débloqué ! Tu peux le choisir dans ton équipe.'}
   else{const n=Math.min(5,(g.stars[sp.id]||0)+1);g.stars[sp.id]=n;msg=`⭐ ${esc(sp.name)} gagne une étoile (${n}/5) : il commencera au niveau ${5+2*n} !`}
   setGacha(g);
   const box=$('#modalBox');box.innerHTML=`<h3>Oh ? Un œuf éclot !</h3><div class="hatch">${eggHTML(egg.tier,'big wob')}</div>`;$('#modal').classList.remove('hidden');
@@ -796,14 +798,20 @@ async function fsDel(path){const r=await fetch(`${fsBase()}/${path}`,{method:'DE
 const fInt=(d,k)=>d&&d.fields&&d.fields[k]?+(d.fields[k].integerValue||0):0, fStr=(d,k)=>d&&d.fields&&d.fields[k]?d.fields[k].stringValue||'':'';
 function updGachaBtn(){const g=gacha();$('#tGacha').textContent=`🥚 Tirage · 🎟️ ${g.tickets}`+(g.eggs.length?` · 🥚${g.eggs.length}`:'')}
 let lastGift=0;
-async function claimGifts(){if(!ACC||Date.now()-lastGift<20000)return;lastGift=Date.now();let got=0;const msgs=[];
- try{const d=await fsGet('gifts/'+ACC.uid);const n=fInt(d,'tickets');if(n!==0){await fsDel('gifts/'+ACC.uid);got+=n;if(fStr(d,'msg'))msgs.push(fStr(d,'msg'))}}catch(e){console.warn('gifts',e)}
+const fArr=(d,k)=>{try{return JSON.parse(fStr(d,k)||'[]')}catch(e){return[]}};
+async function claimGifts(){if(!ACC||Date.now()-lastGift<20000)return;lastGift=Date.now();let got=0;const msgs=[],sps=[];
+ try{const d=await fsGet('gifts/'+ACC.uid);const n=fInt(d,'tickets'),u=fArr(d,'unlocks');if(n!==0||u.length){await fsDel('gifts/'+ACC.uid);got+=n;sps.push(...u);if(fStr(d,'msg'))msgs.push(fStr(d,'msg'))}}catch(e){console.warn('gifts',e)}
  let ev=[];try{const d=await fsGet('game/events');ev=d?JSON.parse(fStr(d,'data')||'[]'):[]}catch(e){console.warn('events',e)}
- const g=gacha();for(const e of ev)if(e&&e.id&&!g.claimed.includes(e.id)){g.claimed.push(e.id);got+=+e.tickets||0;if(e.msg)msgs.push(e.msg)}
- if(!got&&g.claimed.length===gacha().claimed.length)return;g.claimed=g.claimed.slice(-200);g.tickets=Math.max(0,g.tickets+got);setGacha(g);if(!got)return;
+ const g=gacha(),before=g.claimed.length;for(const e of ev)if(e&&e.id&&!g.claimed.includes(e.id)){g.claimed.push(e.id);got+=+e.tickets||0;if(Array.isArray(e.unlocks))sps.push(...e.unlocks);if(e.msg)msgs.push(e.msg)}
+ if(!got&&!sps.length&&g.claimed.length===before)return;
+ const res=sps.map(id=>[id,unlockOrStar(g,id)]).filter(x=>x[1]);
+ g.claimed=g.claimed.slice(-200);g.tickets=Math.max(0,g.tickets+got);setGacha(g);if(!got&&!res.length)return;
  if(!$('#s-title').classList.contains('hidden'))updGachaBtn();
- const abs=Math.abs(got),body=`<div class="hatch"><div style="font-size:64px">${got>0?'🎁':'📉'}</div><div class="nm">${got>0?'+':'−'}${abs} ticket${abs>1?'s':''} 🎟️</div>${got<0?'<div class="modtxt">L’admin t’a retiré des tickets.</div>':''}${msgs.map(m=>`<div class="modtxt">« ${esc(m)} »</div>`).join('')}</div>`;
- if($('#modal').classList.contains('hidden'))choose(got>0?'Cadeau de l’admin !':'Message de l’admin',[],{body,cancel:got>0?'Merci !':'OK'});else toast(got>0?`🎁 +${got} tickets offerts par l’admin !`:`📉 L’admin t’a retiré ${abs} tickets`)}
+ const abs=Math.abs(got),body=`<div class="hatch">${got?`<div style="font-size:56px">${got>0?'🎁':'📉'}</div><div class="nm">${got>0?'+':'−'}${abs} ticket${abs>1?'s':''} 🎟️</div>${got<0?'<div class="modtxt">L’admin t’a retiré des tickets.</div>':''}`:''}
+  ${res.map(([id,r])=>`<div class="mem gift" style="justify-content:center;margin:8px 0"><div class="av">${av(SPECIES[id])}</div><div style="text-align:left">${esc(SPECIES[id].name)} ${rtag(SPECIES[id])}<br><small>${r==='new'?'🔓 Débloqué !':'⭐ +1 étoile'}</small></div></div>`).join('')}
+  ${msgs.map(m=>`<div class="modtxt">« ${esc(m)} »</div>`).join('')}</div>`;
+ const good=got>0||res.length;
+ if($('#modal').classList.contains('hidden'))choose(good?'Cadeau de l’admin !':'Message de l’admin',[],{body,cancel:good?'Merci !':'OK'});else toast(good?'🎁 Tu as reçu un cadeau de l’admin !':`📉 L’admin t’a retiré ${abs} tickets`)}
 function admErr(e){const m=String(e&&e.message||e);return m.startsWith('PERMISSION_DENIED')?'Refusé : mets à jour les règles Firestore (voir les instructions)':errMsg(e)}
 const admN=sel=>clamp(Math.round(+$(sel).value||0),-9999,9999);
 async function adminPanel(){if(!isAdmin())return;const box=$('#modalBox');
@@ -811,9 +819,15 @@ async function adminPanel(){if(!isAdmin())return;const box=$('#modalBox');
  <div class="adm"><h4>Mes tickets : <span id="admMine">${gacha().tickets}</span> 🎟️</h4><div class="arow"><input type="number" id="admMeN" value="10" step="1"><button class="primary" id="admMe">Appliquer</button><span class="note">(négatif = retirer)</span></div></div>
  <div class="adm"><h4>🎁 Donner / retirer à TOUS les joueurs</h4><div class="arow"><input type="number" id="admAllN" value="5" step="1"><span>tickets</span><input type="text" id="admAllMsg" maxlength="80" placeholder="Message (facultatif)"><button class="primary" id="admAll">Envoyer</button></div>
   <div class="note" style="margin-top:6px">Un nombre négatif retire des tickets (jamais en dessous de 0). Chaque joueur le reçoit une seule fois, à sa prochaine visite du menu (les nouveaux joueurs aussi).</div></div>
+ <div class="adm"><h4>🎭 Donner un combattant</h4><div class="arow"><select id="admSp" style="flex:1;min-width:160px">${rosterAll().slice().sort((a,b)=>a.name.localeCompare(b.name)).map(sp=>`<option value="${esc(sp.id)}">${esc(sp.name)} · ${RAR[rarOf(sp)].n}</option>`).join('')}</select><button id="admSpMe">À moi</button><button class="primary" id="admSpAll">À tous</button></div>
+  <div class="note" style="margin-top:6px">Ou clique sur 🎭 à côté d’un joueur ci-dessous. S’il l’a déjà, il gagne une ⭐.</div></div>
  <div class="adm"><h4>👥 Donner / retirer à un joueur</h4><div class="arow" style="margin-bottom:6px"><input type="text" id="admMsg" maxlength="80" placeholder="Message pour le joueur (facultatif)"></div><div id="admList" class="note">Chargement des joueurs…</div></div>`;
  const c=document.createElement('button');c.className='opt cancel';c.textContent='Fermer';c.onclick=()=>{$('#modal').classList.add('hidden');title()};box.appendChild(c);
  $('#modal').classList.remove('hidden');
+ $('#admSpMe').onclick=()=>{const sid=$('#admSp').value,g=gacha(),r=unlockOrStar(g,sid);setGacha(g);toast(r==='new'?`🔓 ${SPECIES[sid].name} débloqué pour toi !`:`⭐ ${SPECIES[sid].name} gagne une étoile`)};
+ $('#admSpAll').onclick=async()=>{const sid=$('#admSp').value,b=$('#admSpAll');b.disabled=true;
+  try{const d=await fsGet('game/events');const ev=d?JSON.parse(fStr(d,'data')||'[]'):[];ev.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),tickets:0,unlocks:[sid],msg:$('#admAllMsg').value.trim(),at:new Date().toISOString()});
+   await fsPatch('game/events',{data:{stringValue:JSON.stringify(ev.slice(-50))}});toast(`🎭 ${SPECIES[sid].name} envoyé à tous les joueurs !`)}catch(e){toast(admErr(e))}b.disabled=false};
  $('#admMe').onclick=()=>{const n=admN('#admMeN');if(!n)return toast('Écris un nombre (pas 0)');const g=gacha();g.tickets=Math.max(0,g.tickets+n);setGacha(g);$('#admMine').textContent=g.tickets;toast(n>0?`+${n} tickets pour toi !`:`${n} tickets pour toi`)};
  $('#admAll').onclick=async()=>{const n=admN('#admAllN'),msg=$('#admAllMsg').value.trim();if(!n)return toast('Écris un nombre (pas 0)');$('#admAll').disabled=true;
   try{const d=await fsGet('game/events');const ev=d?JSON.parse(fStr(d,'data')||'[]'):[];ev.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),tickets:n,msg,at:new Date().toISOString()});
@@ -822,9 +836,12 @@ async function adminPanel(){if(!isAdmin())return;const box=$('#modalBox');
  try{const d=await fsGet('players?pageSize=300');const docs=(d&&d.documents)||[];
   const rows=docs.map(doc=>{const uid=doc.name.split('/').pop();let t='?',best=0;try{const data=JSON.parse(fStr(doc,'data')||'{}');const g=JSON.parse(data.lr_gacha||'null');t=g?g.tickets:3;best=JSON.parse(data.lr_best||'0')}catch(e){}
    return{uid,name:fStr(doc,'name')||'(sans pseudo)',email:fStr(doc,'email'),t,best}}).sort((a,b)=>a.name.localeCompare(b.name));
-  $('#admList').innerHTML=rows.length?`<div class="note" style="margin-bottom:4px">${rows.length} joueur${rows.length>1?'s':''}</div>`+rows.map(r=>`<div class="prow"><div class="t">${esc(r.name)}${r.uid===ACC.uid?' (toi)':''}<br><small>${esc(r.email)} · 🎟️ ${r.t} · record vague ${r.best||0}</small></div><input type="number" value="5" step="1" data-n="${esc(r.uid)}"><button data-give="${esc(r.uid)}" data-nm="${esc(r.name)}">Appliquer</button></div>`).join(''):'Aucun joueur pour l’instant.';
+  $('#admList').innerHTML=rows.length?`<div class="note" style="margin-bottom:4px">${rows.length} joueur${rows.length>1?'s':''}</div>`+rows.map(r=>`<div class="prow"><div class="t">${esc(r.name)}${r.uid===ACC.uid?' (toi)':''}<br><small>${esc(r.email)} · 🎟️ ${r.t} · record vague ${r.best||0}</small></div><input type="number" value="5" step="1" data-n="${esc(r.uid)}"><button data-give="${esc(r.uid)}" data-nm="${esc(r.name)}">Appliquer</button><button data-givesp="${esc(r.uid)}" data-nm="${esc(r.name)}" title="Donner le combattant choisi">🎭</button></div>`).join(''):'Aucun joueur pour l’instant.';
   $('#admList').querySelectorAll('[data-give]').forEach(b=>b.onclick=async()=>{const uid=b.dataset.give,n=admN(`[data-n="${uid}"]`);if(!n)return toast('Écris un nombre (pas 0)');b.disabled=true;
-   try{const cur=fInt(await fsGet('gifts/'+uid),'tickets');await fsPatch('gifts/'+uid,{tickets:{integerValue:String(cur+n)},msg:{stringValue:$('#admMsg').value.trim()}});toast(n>0?`🎁 ${n} tickets envoyés à ${b.dataset.nm} !`:`📉 ${-n} tickets retirés à ${b.dataset.nm}`)}
+   try{const d=await fsGet('gifts/'+uid);await fsPatch('gifts/'+uid,{tickets:{integerValue:String(fInt(d,'tickets')+n)},unlocks:{stringValue:JSON.stringify(fArr(d,'unlocks'))},msg:{stringValue:$('#admMsg').value.trim()||fStr(d,'msg')}});toast(n>0?`🎁 ${n} tickets envoyés à ${b.dataset.nm} !`:`📉 ${-n} tickets retirés à ${b.dataset.nm}`)}
+   catch(e){toast(admErr(e))}b.disabled=false});
+  $('#admList').querySelectorAll('[data-givesp]').forEach(b=>b.onclick=async()=>{const uid=b.dataset.givesp,sid=$('#admSp').value;b.disabled=true;
+   try{const d=await fsGet('gifts/'+uid);const u=fArr(d,'unlocks');u.push(sid);await fsPatch('gifts/'+uid,{tickets:{integerValue:String(fInt(d,'tickets'))},unlocks:{stringValue:JSON.stringify(u)},msg:{stringValue:$('#admMsg').value.trim()||fStr(d,'msg')}});toast(`🎭 ${SPECIES[sid].name} envoyé à ${b.dataset.nm} !`)}
    catch(e){toast(admErr(e))}b.disabled=false})}
  catch(e){$('#admList').textContent=admErr(e)}}
 function typeChart(){const h=TYPES.map(t=>{const weak=TYPES.filter(d=>STRONG[d].includes(t));
@@ -837,7 +854,7 @@ function help(){choose('Comment jouer',[],{cancel:'Compris !',body:`<div class="
 • Affaiblis un adversaire, puis utilise un <b>📝 Contrat</b> pour le recruter.<br>
 • Profite des types (voir la Table des types) pour frapper fort.<br>
 • Au début, seuls les combattants 🟢 <b>Starter</b> sont disponibles. Pour débloquer les autres, <b>recrute-les</b> avec un 📝 Contrat ou <b>fais-les éclore</b> dans un œuf !<br>
-• Chaque combattant a une rareté : 🟢 Starter, ⚪ Commune, 🔵 Rare, 🟣 Épique ou 🟡 Légendaire. Plus il est rare, moins on le croise et plus il est dur à recruter. Les 🟡 légendaires se croisent très rarement à partir de la vague 8. Les 🌈 <b>secrets</b> (1 chance sur 250) s’obtiennent uniquement dans les œufs de la <b>🥚 machine à tirage</b> ! Recruter ou faire éclore un légendaire le débloque comme starter.<br>
+• Chaque combattant a une rareté : 🟢 Starter, ⚪ Commune, 🔵 Rare, 🟣 Épique ou 🟡 Légendaire. Plus il est rare, moins on le croise et plus il est dur à recruter. Les 🟡 légendaires se croisent très rarement à partir de la vague 8. Les ⚫ <b>secrets</b> (1 chance sur 250) s’obtiennent uniquement dans les œufs de la <b>🥚 machine à tirage</b> ! Recruter ou faire éclore un légendaire le débloque comme starter.<br>
 • Tickets 🎟️ : tu en gagnes 1 à chaque boss vaincu. Les œufs éclosent après quelques vagues jouées. Un combattant déjà obtenu gagne une ⭐ (il commence 2 niveaux plus haut).<br>
 • Tes combattants apprennent de nouvelles attaques en montant de niveau.<br>
 • Un combattant K.O. le reste jusqu’à ce que tu utilises un Rappel. Si tout le monde est K.O., la partie est finie. Jusqu’où iras-tu ?<br><br>
