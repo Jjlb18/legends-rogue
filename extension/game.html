@@ -173,6 +173,11 @@ table.tc th{font-weight:normal}
 .rt.sec{background:linear-gradient(90deg,#ff4f4f,#ffcf4a,#4ade80,#3fa7ff,#c084fc);color:#1a1426;border-color:#fff8}
 .egg.secret{background:linear-gradient(160deg,#ff9a9a,#ffe08a,#9af0b0,#9ad0ff,#e0a8ff);--sp:#ffffffcc;box-shadow:0 0 16px #ff4fd8}
 .flash.rainbow{background:linear-gradient(90deg,#ff4f4f,#ffcf4a,#4ade80,#3fa7ff,#c084fc)}
+.adm{background:var(--panel2);border-radius:8px;padding:10px 12px;margin-bottom:10px}
+.adm h4{font-family:'Press Start 2P',monospace;font-weight:normal;font-size:10px;margin:0 0 8px;line-height:1.6}
+.arow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.arow input[type=number]{width:70px}.arow input[type=text]{flex:1;min-width:120px}
+.prow{display:flex;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}.prow .t{flex:1;line-height:1.05}.prow small{color:var(--dim)}
+.prow input{width:60px}.prow button{padding:6px 8px;font-size:9px}
 .tcs{display:grid;gap:6px}
 .tcr{display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;align-items:center;background:var(--panel2);border-radius:8px;padding:8px 10px}
 .tcr .tb{font-size:8px;padding:4px 6px}.tct .tb{font-size:9px;padding:6px 8px}
@@ -262,6 +267,7 @@ button.link{background:none;border:none;color:var(--dim);font-family:'VT323',mon
     <button id="tContinue" class="primary hidden">▶ Continuer la partie</button>
     <button id="tNew" class="primary">Nouvelle partie</button>
     <button id="tGacha">🥚 Tirage</button>
+    <button id="tAdmin" class="hidden">🛠️ Admin</button>
     <button id="tEditor">★ Créer des combattants</button>
     <button id="tTypes">Table des types</button>
     <button id="tHelp">Comment jouer</button>

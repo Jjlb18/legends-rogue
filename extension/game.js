@@ -170,7 +170,7 @@ function save(){if(G)LS.set('lr_run',G)}
 
 // ---------- screens ----------
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));$('#'+id).classList.remove('hidden');window.scrollTo(0,0)}
-function title(){show('s-title');{const g=gacha(),rd=g.eggs.filter(e=>e.left<=0).length;$('#tGacha').textContent=`🥚 Tirage · 🎟️ ${g.tickets}`+(g.eggs.length?` · 🥚${g.eggs.length}`:'');if(rd&&ACC)setTimeout(()=>{if(!$('#s-title').classList.contains('hidden')&&$('#modal').classList.contains('hidden'))hatchReady()},600)}$('#tEditor').classList.toggle('hidden',!isAdmin());$('#acct').innerHTML=ACC?`👤 ${esc(ACC.name||ACC.email)} <button id="acctBtn">Mon compte</button>`:'';if(ACC)$('#acctBtn').onclick=accountMenu;$('#s-title .parade').innerHTML=['einstein','joan','mozart','cleopatra','tesla'].map(id=>av(SPECIES[id])).join('');const best=LS.get('lr_best',0);$('#best').textContent=best?`Meilleure partie : vague ${best}`:'';
+function title(){show('s-title');$('#tAdmin').classList.toggle('hidden',!isAdmin());if(ACC)claimGifts();{const g=gacha(),rd=g.eggs.filter(e=>e.left<=0).length;$('#tGacha').textContent=`🥚 Tirage · 🎟️ ${g.tickets}`+(g.eggs.length?` · 🥚${g.eggs.length}`:'');if(rd&&ACC)setTimeout(()=>{if(!$('#s-title').classList.contains('hidden')&&$('#modal').classList.contains('hidden'))hatchReady()},600)}$('#tEditor').classList.toggle('hidden',!isAdmin());$('#acct').innerHTML=ACC?`👤 ${esc(ACC.name||ACC.email)} <button id="acctBtn">Mon compte</button>`:'';if(ACC)$('#acctBtn').onclick=accountMenu;$('#s-title .parade').innerHTML=['einstein','joan','mozart','cleopatra','tesla'].map(id=>av(SPECIES[id])).join('');const best=LS.get('lr_best',0);$('#best').textContent=best?`Meilleure partie : vague ${best}`:'';
  $('#tContinue').classList.toggle('hidden',!LS.get('lr_run',null))}
 
 // ---------- modal ----------
@@ -360,7 +360,7 @@ function continueRun(){const g=LS.get('lr_run',null);if(!g)return title();g.part
 // ---------- gacha (egg machine) ----------
 const EGG={common:{n:'Commun',w:70,waves:5},rare:{n:'Rare',w:22,waves:10},epic:{n:'Épique',w:6.1,waves:15},legendary:{n:'Légendaire',w:1.5,waves:25},secret:{n:'Secret',w:.4,waves:35}};
 const TIERS=['common','rare','epic','legendary','secret'],PITY=50;
-function gacha(){const g=Object.assign({tickets:3,eggs:[],stars:{},unlocked:[],pity:0},LS.get('lr_gacha',{}));return g}
+function gacha(){const g=Object.assign({tickets:3,eggs:[],stars:{},unlocked:[],pity:0,claimed:[]},LS.get('lr_gacha',{}));return g}
 function setGacha(g){LS.set('lr_gacha',g)}
 function rollTier(g,atLeastRare){let t;if(g.pity>=PITY-1)t='legendary';else{let x=Math.random()*100;t=TIERS.find(k=>(x-=EGG[k].w)<0)||'common'}
  if(atLeastRare&&t==='common')t='rare';g.pity=t==='legendary'||t==='secret'?0:g.pity+1;return t}
@@ -404,6 +404,44 @@ async function hatchReady(){if(hatching)return;hatching=true;
    const b=document.createElement('button');b.className='opt cancel';b.textContent='Super !';b.onclick=()=>{$('#modal').classList.add('hidden');r()};box.appendChild(b)})}}
  finally{hatching=false}
  title()}
+// ---------- gifts & admin panel ----------
+const fsBase=()=>`https://firestore.googleapis.com/v1/projects/${FIREBASE.projectId||jwtAud(ACC.idToken)}/databases/(default)/documents`;
+async function fsGet(path){const r=await fetch(`${fsBase()}/${path}`,{headers:{Authorization:'Bearer '+await idTok()}});if(r.status===404)return null;if(!r.ok)throw await fsErr(r);return r.json()}
+async function fsPatch(path,fields){const r=await fetch(`${fsBase()}/${path}`,{method:'PATCH',headers:{Authorization:'Bearer '+await idTok(),'Content-Type':'application/json'},body:JSON.stringify({fields})});if(!r.ok)throw await fsErr(r);return r.json()}
+async function fsDel(path){const r=await fetch(`${fsBase()}/${path}`,{method:'DELETE',headers:{Authorization:'Bearer '+await idTok()}});if(!r.ok&&r.status!==404)throw await fsErr(r)}
+const fInt=(d,k)=>d&&d.fields&&d.fields[k]?+(d.fields[k].integerValue||0):0, fStr=(d,k)=>d&&d.fields&&d.fields[k]?d.fields[k].stringValue||'':'';
+function updGachaBtn(){const g=gacha();$('#tGacha').textContent=`🥚 Tirage · 🎟️ ${g.tickets}`+(g.eggs.length?` · 🥚${g.eggs.length}`:'')}
+let lastGift=0;
+async function claimGifts(){if(!ACC||Date.now()-lastGift<20000)return;lastGift=Date.now();let got=0;const msgs=[];
+ try{const d=await fsGet('gifts/'+ACC.uid);const n=fInt(d,'tickets');if(n>0){await fsDel('gifts/'+ACC.uid);got+=n;if(fStr(d,'msg'))msgs.push(fStr(d,'msg'))}}catch(e){console.warn('gifts',e)}
+ let ev=[];try{const d=await fsGet('game/events');ev=d?JSON.parse(fStr(d,'data')||'[]'):[]}catch(e){console.warn('events',e)}
+ const g=gacha();for(const e of ev)if(e&&e.id&&!g.claimed.includes(e.id)){g.claimed.push(e.id);got+=+e.tickets||0;if(e.msg)msgs.push(e.msg)}
+ if(!got&&g.claimed.length===gacha().claimed.length)return;g.claimed=g.claimed.slice(-200);g.tickets+=got;setGacha(g);if(!got)return;
+ if(!$('#s-title').classList.contains('hidden'))updGachaBtn();
+ const body=`<div class="hatch"><div style="font-size:64px">🎁</div><div class="nm">+${got} ticket${got>1?'s':''} 🎟️</div>${msgs.map(m=>`<div class="modtxt">« ${esc(m)} »</div>`).join('')}</div>`;
+ if($('#modal').classList.contains('hidden'))choose('Cadeau de l’admin !',[],{body,cancel:'Merci !'});else toast(`🎁 +${got} tickets offerts par l’admin !`)}
+function admErr(e){const m=String(e&&e.message||e);return m.startsWith('PERMISSION_DENIED')?'Refusé : mets à jour les règles Firestore (voir les instructions)':errMsg(e)}
+async function adminPanel(){if(!isAdmin())return;const box=$('#modalBox');
+ box.innerHTML=`<h3>🛠️ Panneau admin</h3>
+ <div class="adm"><h4>Mes tickets : <span id="admMine">${gacha().tickets}</span> 🎟️</h4><div class="arow">${[1,5,10,50].map(n=>`<button data-me="${n}">+${n}</button>`).join('')}</div></div>
+ <div class="adm"><h4>🎁 Donner à TOUS les joueurs</h4><div class="arow"><input type="number" id="admAllN" value="5" min="1" max="999"><span>tickets</span><input type="text" id="admAllMsg" maxlength="80" placeholder="Message (facultatif)"><button class="primary" id="admAll">Envoyer</button></div>
+  <div class="note" style="margin-top:6px">Chaque joueur le reçoit une seule fois, à sa prochaine visite du menu (les nouveaux joueurs aussi).</div></div>
+ <div class="adm"><h4>👥 Donner à un joueur</h4><div class="arow" style="margin-bottom:6px"><input type="text" id="admMsg" maxlength="80" placeholder="Message pour le joueur (facultatif)"></div><div id="admList" class="note">Chargement des joueurs…</div></div>`;
+ const c=document.createElement('button');c.className='opt cancel';c.textContent='Fermer';c.onclick=()=>{$('#modal').classList.add('hidden');title()};box.appendChild(c);
+ $('#modal').classList.remove('hidden');
+ box.querySelectorAll('[data-me]').forEach(b=>b.onclick=()=>{const g=gacha();g.tickets+=+b.dataset.me;setGacha(g);$('#admMine').textContent=g.tickets;toast(`+${b.dataset.me} tickets pour toi !`)});
+ $('#admAll').onclick=async()=>{const n=clamp(Math.round(+$('#admAllN').value||0),1,999),msg=$('#admAllMsg').value.trim();$('#admAll').disabled=true;
+  try{const d=await fsGet('game/events');const ev=d?JSON.parse(fStr(d,'data')||'[]'):[];ev.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),tickets:n,msg,at:new Date().toISOString()});
+   await fsPatch('game/events',{data:{stringValue:JSON.stringify(ev.slice(-50))}});toast(`🎁 ${n} tickets envoyés à tous les joueurs !`);$('#admAllMsg').value=''}
+  catch(e){toast(admErr(e))}$('#admAll').disabled=false};
+ try{const d=await fsGet('players?pageSize=300');const docs=(d&&d.documents)||[];
+  const rows=docs.map(doc=>{const uid=doc.name.split('/').pop();let t='?',best=0;try{const data=JSON.parse(fStr(doc,'data')||'{}');const g=JSON.parse(data.lr_gacha||'null');t=g?g.tickets:3;best=JSON.parse(data.lr_best||'0')}catch(e){}
+   return{uid,name:fStr(doc,'name')||'(sans pseudo)',email:fStr(doc,'email'),t,best}}).sort((a,b)=>a.name.localeCompare(b.name));
+  $('#admList').innerHTML=rows.length?`<div class="note" style="margin-bottom:4px">${rows.length} joueur${rows.length>1?'s':''}</div>`+rows.map(r=>`<div class="prow"><div class="t">${esc(r.name)}${r.uid===ACC.uid?' (toi)':''}<br><small>${esc(r.email)} · 🎟️ ${r.t} · record vague ${r.best||0}</small></div><input type="number" value="5" min="1" max="999" data-n="${esc(r.uid)}"><button data-give="${esc(r.uid)}" data-nm="${esc(r.name)}">Donner</button></div>`).join(''):'Aucun joueur pour l’instant.';
+  $('#admList').querySelectorAll('[data-give]').forEach(b=>b.onclick=async()=>{const uid=b.dataset.give,n=clamp(Math.round(+$(`[data-n="${uid}"]`).value||0),1,999);b.disabled=true;
+   try{const cur=fInt(await fsGet('gifts/'+uid),'tickets');await fsPatch('gifts/'+uid,{tickets:{integerValue:String(cur+n)},msg:{stringValue:$('#admMsg').value.trim()}});toast(`🎁 ${n} tickets envoyés à ${b.dataset.nm} !`)}
+   catch(e){toast(admErr(e))}b.disabled=false})}
+ catch(e){$('#admList').textContent=admErr(e)}}
 function typeChart(){const h=TYPES.map(t=>{const weak=TYPES.filter(d=>STRONG[d].includes(t));
  return `<div class="tcr"><div class="tct">${tb(t)}</div><div>${STRONG[t].map(tb).join('')}</div><div>${weak.map(tb).join('')}</div></div>`}).join('');
  choose('Table des types',[],{body:`<div class="tcs"><div class="tcr tch"><div>Type</div><div class="tcl good">💪 Fort contre</div><div class="tcl bad">💥 Faible contre</div></div>${h}</div><div class="note" style="margin-top:12px">💪 = ton attaque fait <b>2× plus</b> de dégâts.<br>💥 = ces types te font <b>2× plus</b> de dégâts.<br>Une attaque du même type que ton combattant fait aussi <b>1,5× plus</b> de dégâts.</div>`,cancel:'Fermer'})}
@@ -459,7 +497,7 @@ function loadImg(file){return new Promise((res,rej)=>{const r=new FileReader();r
 
 // ---------- wiring ----------
 $('#tNew').onclick=()=>{if(LS.get('lr_run',null)){choose('Commencer une nouvelle partie ? Ta partie sauvegardée sera perdue.',[{value:1,label:'Oui, nouvelle partie'},{value:0,label:'Annuler'}],{cols:2}).then(v=>{if(v){LS.del('lr_run');starterScreen()}})}else starterScreen()};
-$('#tContinue').onclick=continueRun;$('#tGacha').onclick=()=>openGacha();$('#tEditor').onclick=editorScreen;$('#tTypes').onclick=typeChart;$('#tHelp').onclick=help;
+$('#tContinue').onclick=continueRun;$('#tAdmin').onclick=()=>adminPanel();$('#tGacha').onclick=()=>openGacha();$('#tEditor').onclick=editorScreen;$('#tTypes').onclick=typeChart;$('#tHelp').onclick=help;
 $('#stBack').onclick=title;$('#stGo').onclick=startRun;$('#edBack').onclick=title;
 $('#spdBtn').onclick=()=>{settings.fast=!settings.fast;LS.set('lr_settings',settings);$('#spdBtn').style.color=settings.fast?'var(--acc)':'';toast(settings.fast?'Texte rapide':'Texte normal')};
 $('#quitBtn').onclick=async()=>{const v=await choose('Quitter la partie ? Elle est sauvegardée au début de chaque vague.',[{value:1,label:'Retour au menu'},{value:0,label:'Continuer'}],{cols:2});if(v){G=null;busy=false;title()}};
@@ -507,7 +545,7 @@ async function fsErr(r){const j=await r.json().catch(()=>({}));return new Error(
 async function cloudLoad(){const r=await fetch(docURL(),{headers:{Authorization:'Bearer '+await idTok()}});if(r.status===404)return null;if(!r.ok)throw await fsErr(r);
  const f=(await r.json()).fields||{};return{data:f.data?JSON.parse(f.data.stringValue):{},name:f.name&&f.name.stringValue}}
 function localData(){const d={};SYNC_KEYS.forEach(k=>{try{const v=localStorage.getItem(k);if(v!=null)d[k]=v}catch(e){}});return d}
-async function cloudSave(keep){const body=JSON.stringify({fields:{data:{stringValue:JSON.stringify(localData())},name:{stringValue:ACC.name||''},updated:{timestampValue:new Date().toISOString()}}});
+async function cloudSave(keep){const body=JSON.stringify({fields:{data:{stringValue:JSON.stringify(localData())},name:{stringValue:ACC.name||''},email:{stringValue:ACC.email||''},updated:{timestampValue:new Date().toISOString()}}});
  const r=await fetch(docURL(),{method:'PATCH',keepalive:!!keep&&body.length<60000,headers:{Authorization:'Bearer '+await idTok(),'Content-Type':'application/json'},body});if(!r.ok)throw await fsErr(r)}
 function queueSync(){if(!ACC)return;CLOUD('☁️ …');clearTimeout(syncT);syncT=setTimeout(doSync,1500)}
 async function doSync(keep){clearTimeout(syncT);syncT=null;if(!ACC)return;if(syncing){syncAgain=true;return}syncing=true;
