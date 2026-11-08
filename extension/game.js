@@ -414,7 +414,7 @@ function openGacha(res){const g=gacha(),box=$('#modalBox');
   <div class="gside"><div class="tix">🎟️ ${g.tickets} ticket${g.tickets>1?'s':''}</div>
    <div class="rates">Chances : ⚪ Commun 70 % · 🔵 Rare 22 % · 🟣 Épique 6,1 % · 🟡 Légendaire 1,5 % · ⚫ Secret 0,4 % (1 sur 250)<br>🟡 Légendaire garanti dans ${PITY-g.pity} tirage${PITY-g.pity>1?'s':''} maximum.<br>×10 : au moins un œuf 🔵 Rare ou mieux.</div>
    <div class="btnrow"><button class="primary" id="pull1" ${g.tickets<1?'disabled':''}>Tirer ×1 · 🎟️1</button><button id="pull10" ${g.tickets<10?'disabled':''}>Tirer ×10 · 🎟️10</button></div>
-   <div id="pullRes">${res?res.map((t,i)=>eggHTML(t,'pop',`animation-delay:${i*.08}s`)).join('')+`<div class="lbl" style="color:${RAR[best].c}">${res.length>1?'Meilleur œuf':'Œuf'} : ${EGG[best].n}${best==='secret'?' !!!!! ⚫⚫⚫':best==='legendary'?' !!! ✨':' !'}</div>`:''}</div></div></div>
+   <div id="pullRes">${res?res.slice().sort((x,y)=>TIERS.indexOf(x)-TIERS.indexOf(y)).map((t,i)=>eggHTML(t,'pop',`animation-delay:${i*.08}s`)).join('')+`<div class="lbl" style="color:${RAR[best].c}">${res.length>1?'Meilleur œuf':'Œuf'} : ${EGG[best].n}${best==='secret'?' !!!!! ⚫⚫⚫':best==='legendary'?' !!! ✨':' !'}</div>`:''}</div></div></div>
  <div class="note" style="margin-top:14px">Les œufs tirés vont dans <b>🥚 Mes œufs</b> (${g.eggs.length} en incubation). Gagne 🎟️ 1 ticket par boss vaincu.</div>
  <div class="btnrow"><button id="toEggs">🥚 Voir mes œufs</button></div>`;
  const c=document.createElement('button');c.className='opt cancel';c.textContent='Fermer';c.onclick=()=>{$('#modal').classList.add('hidden');if(!$('#s-title').classList.contains('hidden'))title()};box.appendChild(c);
