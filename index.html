@@ -814,7 +814,7 @@ function openGacha(res){const g=gacha(),box=$('#modalBox');
  const best=res&&TIERS[Math.max(...res.map(t=>TIERS.indexOf(t)))];
  box.innerHTML=`<h3>🎰 Machine à tirage</h3>
  <div class="gacha-wrap"><div class="machine" id="mach"><div class="dome">${['common','rare','common','epic','common','legendary','rare','common','secret','rare','epic','common'].map(t=>eggHTML(t,'mini')).join('')}</div>
-  <div class="mbody"><span class="lbl">LEGENDS</span><div class="chute" id="chute">${best?eggHTML(best):''}</div><div class="knob" id="knob"></div></div></div>
+  <div class="mbody"><span class="lbl">LEGENDS</span><div class="chute" id="chute">${res?eggHTML(TIERS[Math.min(...res.map(t=>TIERS.indexOf(t)))]):''}</div><div class="knob" id="knob"></div></div></div>
   <div class="gside"><div class="tix">🎟️ ${g.tickets} ticket${g.tickets>1?'s':''}</div>
    <div class="rates">Chances : ⚪ Commun 70 % · 🔵 Rare 22 % · 🟣 Épique 6,1 % · 🟡 Légendaire 1,5 % · ⚫ Secret 0,4 % (1 sur 250)<br>🟡 Légendaire garanti dans ${PITY-g.pity} tirage${PITY-g.pity>1?'s':''} maximum.<br>×10 : au moins un œuf 🔵 Rare ou mieux.</div>
    <div class="btnrow"><button class="primary" id="pull1" ${g.tickets<1?'disabled':''}>Tirer ×1 · 🎟️1</button><button id="pull10" ${g.tickets<10?'disabled':''}>Tirer ×10 · 🎟️10</button></div>
@@ -837,7 +837,7 @@ async function doPull(n){const g=gacha();if(g.tickets<n)return;g.tickets-=n;cons
  const special=[];for(let i=0;i<n;i++){const t=rollTier(g,n===10&&i===n-1&&!res.some(x=>x!=='common'));res.push(t);const egg={id:Math.random().toString(36).slice(2),tier:t,left:EGG[t].waves};if(LOCKED_R.includes(t)){egg.sid=pickHatch(t).id;special.push(egg)}g.eggs.push(egg)}
  setGacha(g);$('#pull1').disabled=$('#pull10').disabled=true;
  $('#knob').classList.add('turn');$('#mach').classList.add('shake');await sleep(750);
- const best=TIERS[Math.max(...res.map(t=>TIERS.indexOf(t)))];$('#chute').innerHTML=eggHTML(best,'drop');await sleep(650);
+ const best=TIERS[Math.max(...res.map(t=>TIERS.indexOf(t)))],worst=TIERS[Math.min(...res.map(t=>TIERS.indexOf(t)))];$('#chute').innerHTML=eggHTML(worst,'drop');await sleep(650);
  if(best==='epic'){const f=document.createElement('div');f.className='flash';document.body.appendChild(f);setTimeout(()=>f.remove(),1000)}
  for(const e of special)await symbolAnim(symbolURL(SPECIES[e.sid],e.tier),e.tier);
  openGacha(res)}
