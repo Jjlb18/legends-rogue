@@ -93,9 +93,10 @@ let rosterOpts=Object.assign({useDefaults:true},LS.get('lr_rosteropts',{}));
 const SPEED=()=>settings.fast?.45:1;
 const bst=s=>s.base.hp+s.base.atk+s.base.def+s.base.spd;
 const RAR={common:{n:'Commune',c:'#9ca3af',w:100,cost:0,catch:1},rare:{n:'Rare',c:'#3b82f6',w:40,cost:1,catch:.8},
- epic:{n:'Épique',c:'#a855f7',w:18,cost:2,catch:.6},legendary:{n:'Légendaire',c:'#f59e0b',w:6,cost:3,catch:.4}};
+ epic:{n:'Épique',c:'#a855f7',w:18,cost:2,catch:.6},legendary:{n:'Légendaire',c:'#f59e0b',w:6,cost:3,catch:.4},secret:{n:'Secret',c:'#ff4fd8',w:0,cost:4,catch:.25}};
+const LOCKED_R=['legendary','secret'];
 const rarOf=s=>s&&RAR[s.rarity]?s.rarity:(bst(s)>=300?'legendary':bst(s)>=275?'epic':bst(s)>=258?'rare':'common');
-const rtag=s=>{const r=RAR[rarOf(s)];return `<span class="rt" style="--rc:${r.c}">${r.n}</span>`};
+const rtag=s=>{const k=rarOf(s),r=RAR[k];return `<span class="rt ${k==='secret'?'sec':''}" style="--rc:${r.c}">${k==='secret'?'🌈 ':''}${r.n}</span>`};
 const costOf=s=>clamp(Math.round((bst(s)-180)/30)+RAR[rarOf(s)].cost,1,9);
 function wpick(list){const tot=list.reduce((a,s)=>a+RAR[rarOf(s)].w,0);let x=Math.random()*tot;for(const s of list)if((x-=RAR[rarOf(s)].w)<0)return s;return list[list.length-1]}
 function allSpecies(){const l=(rosterOpts.useDefaults?DEFAULTS:[]).concat(customs);return l.length?l:DEFAULTS}
@@ -193,9 +194,9 @@ function renderStarters(){const used=picks.reduce((a,id)=>a+costOf(SPECIES[id]),
  $('#stGo').disabled=!picks.length;
  const list=[...customs,...(rosterOpts.useDefaults||!customs.length?DEFAULTS:[])];
  const gg=gacha();
- $('#stGrid').innerHTML=list.map(s=>{const sel=picks.includes(s.id),c=costOf(s),lk=rarOf(s)==='legendary'&&!gg.unlocked.includes(s.id),can=!lk&&(sel||(used+c<=BUDGET&&picks.length<6)),st=Math.min(5,gg.stars[s.id]||0);
-  return `<div class="card ${rarOf(s)} ${lk?'locked':''} ${sel?'sel':''} ${can?'':'no'}" style="--rc:${RAR[rarOf(s)].c}" data-id="${esc(s.id)}">${customs.includes(s)?'<span class="star">★</span>':''}<span class="cost">${c}</span>${st?`<span class="stars">⭐${st}</span>`:''}<div class="av">${av(s)}</div><div class="nm">${esc(s.name)}</div><div>${s.types.map(tb).join('')}</div><div style="margin-top:4px">${rtag(s)}</div>${lk?'<span class="lockt">🔒 Tirage uniquement</span>':''}</div>`}).join('');
- $('#stGrid').querySelectorAll('.card').forEach(el=>el.onclick=()=>{if(el.classList.contains('locked'))return toast('🔒 Obtiens-le à la machine à tirage !');const id=el.dataset.id;const i=picks.indexOf(id);
+ $('#stGrid').innerHTML=list.map(s=>{const sel=picks.includes(s.id),c=costOf(s),lk=LOCKED_R.includes(rarOf(s))&&!gg.unlocked.includes(s.id),can=!lk&&(sel||(used+c<=BUDGET&&picks.length<6)),st=Math.min(5,gg.stars[s.id]||0);
+  return `<div class="card ${rarOf(s)} ${lk?'locked':''} ${sel?'sel':''} ${can?'':'no'}" style="--rc:${RAR[rarOf(s)].c}" data-id="${esc(s.id)}">${customs.includes(s)?'<span class="star">★</span>':''}<span class="cost">${c}</span>${st?`<span class="stars">⭐${st}</span>`:''}<div class="av">${av(s)}</div><div class="nm">${esc(s.name)}</div><div>${s.types.map(tb).join('')}</div><div style="margin-top:4px">${rtag(s)}</div>${lk?`<span class="lockt">🔒 ${rarOf(s)==='secret'?'Œufs uniquement':'Recrute-le ou tire-le'}</span>`:''}</div>`}).join('');
+ $('#stGrid').querySelectorAll('.card').forEach(el=>el.onclick=()=>{if(el.classList.contains('locked'))return toast(rarOf(SPECIES[el.dataset.id])==='secret'?'🔒 Les secrets s’obtiennent uniquement dans les œufs !':'🔒 Recrute-le en combat ou obtiens-le dans un œuf !');const id=el.dataset.id;const i=picks.indexOf(id);
   if(i>=0)picks.splice(i,1);else{const c=costOf(SPECIES[id]);if(used+c>BUDGET||picks.length>=6)return toast('Pas assez de points');picks.push(id)}renderStarters()})}
 function startRun(){const order=[...BIOMES.keys()].sort(()=>Math.random()-.5);
  const gg=gacha();G={party:picks.map(id=>makeFighter(id,5+2*Math.min(5,gg.stars[id]||0))),active:0,wave:1,bag:{contract:5,potion:3,super:0,full:0,revive:0},biomes:order,enemy:null};
@@ -289,7 +290,7 @@ async function openTeam(){const i=await choose('Équipe — qui faire entrer ?',
 async function doRecruit(){if(G.bag.contract<=0)return toast('Plus de Contrats !');lockUI();G.bag.contract--;upd();
  const e=G.enemy,n=nmOf(e);await say(`Tu proposes un Contrat à ${n}…`,900);
  const rate=Math.min(.95,(e.boss?.3:1)*RAR[rarOf(SPECIES[e.sid])].catch*(1-.8*e.hp/e.maxhp)+.1);anim('#eSpr','wobble');await sleep(1300*SPEED());
- if(Math.random()<rate){await say(`✍️ ${n} signe le Contrat !`);if(await addToParty(e))await say(`${n} rejoint ton équipe !`);await winBattle(true)}
+ if(Math.random()<rate){await say(`✍️ ${n} signe le Contrat !`);if(await addToParty(e))await say(`${n} rejoint ton équipe !`);{const g=gacha();if(LOCKED_R.includes(rarOf(SPECIES[e.sid]))&&!g.unlocked.includes(e.sid)){g.unlocked.push(e.sid);setGacha(g);await say(`🔓 ${n} est débloqué comme starter !`)}}await winBattle(true)}
  else{await say(`${n} déchire le Contrat !`);await enemyTurn()}}
 async function addToParty(e){const f=JSON.parse(JSON.stringify(e));f.uid=Math.random().toString(36).slice(2);delete f.boss;calc(f);f.hp=Math.max(1,Math.ceil(e.hp/e.maxhp*f.maxhp));resetSt(f);
  if(G.party.length<6){G.party.push(f);return true}
@@ -335,8 +336,8 @@ async function rewards(){const pool=[...REWARDS],out=[];
  else{r.fn();await say(`Tu obtiens : ${r.n} !`,800)}upd()}
 function genEnemy(){const w=G.wave,boss=w%10===0;let pool=allSpecies();
  if(boss){const s=[...pool].sort((a,b)=>bst(b)-bst(a));pool=s.slice(0,Math.max(1,Math.ceil(s.length/2)))}
- {const nl=pool.filter(s=>rarOf(s)!=='legendary');if(nl.length)pool=nl}
- const fav=pool.filter(s=>s.types.includes(curBiome().t));const sp=boss?pick(pool):fav.length&&Math.random()<.5?wpick(fav):wpick(pool);
+ {const nl=pool.filter(s=>rarOf(s)!=='secret'&&(rarOf(s)!=='legendary'||w>=8));if(nl.length)pool=nl}
+ const fav=pool.filter(s=>s.types.includes(curBiome().t));const sp=boss?wpick(pool):fav.length&&Math.random()<.5?wpick(fav):wpick(pool);
  const lvl=Math.min(100,Math.max(2,Math.round(2+w*.6+rnd(-1,1)))+(boss?3:0));const e=makeFighter(sp.id,lvl);
  if(boss){e.boss=true;calc(e);e.hp=e.maxhp}return e}
 async function nextWave(){if(!G.party.some(f=>f.hp>0))return gameOver();
@@ -357,12 +358,12 @@ function continueRun(){const g=LS.get('lr_run',null);if(!g)return title();g.part
 
 // ---------- info modals ----------
 // ---------- gacha (egg machine) ----------
-const EGG={common:{n:'Commun',w:70,waves:5},rare:{n:'Rare',w:22,waves:10},epic:{n:'Épique',w:6.5,waves:15},legendary:{n:'Légendaire',w:1.5,waves:25}};
-const TIERS=['common','rare','epic','legendary'],PITY=50;
+const EGG={common:{n:'Commun',w:70,waves:5},rare:{n:'Rare',w:22,waves:10},epic:{n:'Épique',w:6.1,waves:15},legendary:{n:'Légendaire',w:1.5,waves:25},secret:{n:'Secret',w:.4,waves:35}};
+const TIERS=['common','rare','epic','legendary','secret'],PITY=50;
 function gacha(){const g=Object.assign({tickets:3,eggs:[],stars:{},unlocked:[],pity:0},LS.get('lr_gacha',{}));return g}
 function setGacha(g){LS.set('lr_gacha',g)}
 function rollTier(g,atLeastRare){let t;if(g.pity>=PITY-1)t='legendary';else{let x=Math.random()*100;t=TIERS.find(k=>(x-=EGG[k].w)<0)||'common'}
- if(atLeastRare&&t==='common')t='rare';g.pity=t==='legendary'?0:g.pity+1;return t}
+ if(atLeastRare&&t==='common')t='rare';g.pity=t==='legendary'||t==='secret'?0:g.pity+1;return t}
 function rosterAll(){const l=(rosterOpts.useDefaults?DEFAULTS:[]).concat(customs);return l.length?l:DEFAULTS}
 function pickHatch(tier){for(let i=TIERS.indexOf(tier);i>=0;i--){const p=rosterAll().filter(s=>rarOf(s)===TIERS[i]);if(p.length)return pick(p)}return pick(rosterAll())}
 const eggHTML=(t,c='',st='')=>`<div class="egg ${t} ${c}" style="${st}"><i></i></div>`;
@@ -372,15 +373,15 @@ async function gachaTick(boss){const g=gacha();let ready=0;g.eggs.forEach(e=>{if
 function openGacha(res){const g=gacha(),box=$('#modalBox');
  const best=res&&TIERS[Math.max(...res.map(t=>TIERS.indexOf(t)))];
  box.innerHTML=`<h3>🥚 Machine à tirage</h3>
- <div class="gacha-wrap"><div class="machine" id="mach"><div class="dome">${['common','rare','common','epic','common','legendary','rare','common','common','rare','epic','common'].map(t=>eggHTML(t,'mini')).join('')}</div>
+ <div class="gacha-wrap"><div class="machine" id="mach"><div class="dome">${['common','rare','common','epic','common','legendary','rare','common','secret','rare','epic','common'].map(t=>eggHTML(t,'mini')).join('')}</div>
   <div class="mbody"><span class="lbl">LEGENDS</span><div class="chute" id="chute">${best?eggHTML(best):''}</div><div class="knob" id="knob"></div></div></div>
   <div class="gside"><div class="tix">🎟️ ${g.tickets} ticket${g.tickets>1?'s':''}</div>
-   <div class="rates">Chances : ⚪ Commun 70 % · 🔵 Rare 22 % · 🟣 Épique 6,5 % · 🟡 Légendaire 1,5 %<br>🟡 Légendaire garanti dans ${PITY-g.pity} tirage${PITY-g.pity>1?'s':''} maximum.<br>×10 : au moins un œuf 🔵 Rare ou mieux.</div>
+   <div class="rates">Chances : ⚪ Commun 70 % · 🔵 Rare 22 % · 🟣 Épique 6,1 % · 🟡 Légendaire 1,5 % · 🌈 Secret 0,4 % (1 sur 250)<br>🟡 Légendaire garanti dans ${PITY-g.pity} tirage${PITY-g.pity>1?'s':''} maximum.<br>×10 : au moins un œuf 🔵 Rare ou mieux.</div>
    <div class="btnrow"><button class="primary" id="pull1" ${g.tickets<1?'disabled':''}>Tirer ×1 · 🎟️1</button><button id="pull10" ${g.tickets<10?'disabled':''}>Tirer ×10 · 🎟️10</button></div>
-   <div id="pullRes">${res?res.map((t,i)=>eggHTML(t,'pop',`animation-delay:${i*.08}s`)).join('')+`<div class="lbl" style="color:${RAR[best].c}">${res.length>1?'Meilleur œuf':'Œuf'} : ${EGG[best].n}${best==='legendary'?' !!! ✨':' !'}</div>`:''}</div></div></div>
+   <div id="pullRes">${res?res.map((t,i)=>eggHTML(t,'pop',`animation-delay:${i*.08}s`)).join('')+`<div class="lbl" style="color:${RAR[best].c}">${res.length>1?'Meilleur œuf':'Œuf'} : ${EGG[best].n}${best==='secret'?' !!!!! 🌈🌈🌈':best==='legendary'?' !!! ✨':' !'}</div>`:''}</div></div></div>
  <h3 style="margin-top:16px">Œufs en incubation (${g.eggs.length})</h3>
  <div class="eggs">${g.eggs.length?g.eggs.map(e=>`<div class="eg">${eggHTML(e.tier)}${e.left>0?e.left+' vague'+(e.left>1?'s':''):'Prêt !'}</div>`).join(''):'<span class="note">Aucun œuf pour l’instant.</span>'}</div>
- <div class="note">Les œufs éclosent après des vagues jouées : ⚪ 5 · 🔵 10 · 🟣 15 · 🟡 25. Un légendaire éclos se débloque comme starter ; un combattant déjà obtenu gagne une ⭐ (+2 niveaux au départ, max 5). Gagne 🎟️ 1 ticket par boss vaincu.</div>`;
+ <div class="note">Les œufs éclosent après des vagues jouées : ⚪ 5 · 🔵 10 · 🟣 15 · 🟡 25 · 🌈 35. Un légendaire ou un secret éclos se débloque comme starter ; un combattant déjà obtenu gagne une ⭐ (+2 niveaux au départ, max 5). Gagne 🎟️ 1 ticket par boss vaincu.</div>`;
  const c=document.createElement('button');c.className='opt cancel';c.textContent='Fermer';c.onclick=()=>{$('#modal').classList.add('hidden');if(!$('#s-title').classList.contains('hidden'))title()};box.appendChild(c);
  $('#modal').classList.remove('hidden');
  $('#pull1').onclick=()=>doPull(1);$('#pull10').onclick=()=>doPull(10)}
@@ -389,16 +390,16 @@ async function doPull(n){const g=gacha();if(g.tickets<n)return;g.tickets-=n;cons
  setGacha(g);$('#pull1').disabled=$('#pull10').disabled=true;
  $('#knob').classList.add('turn');$('#mach').classList.add('shake');await sleep(750);
  const best=TIERS[Math.max(...res.map(t=>TIERS.indexOf(t)))];$('#chute').innerHTML=eggHTML(best,'drop');await sleep(650);
- if(best==='legendary'||best==='epic'){const f=document.createElement('div');f.className='flash'+(best==='legendary'?' gold':'');document.body.appendChild(f);setTimeout(()=>f.remove(),1000)}
+ if(best!=='common'&&best!=='rare'){const f=document.createElement('div');f.className='flash'+(best==='secret'?' rainbow':best==='legendary'?' gold':'');document.body.appendChild(f);setTimeout(()=>f.remove(),1000)}
  openGacha(res)}
 let hatching=false;
 async function hatchReady(){if(hatching)return;hatching=true;
  try{for(;;){const g=gacha(),egg=g.eggs.find(e=>e.left<=0);if(!egg)break;const sp=pickHatch(egg.tier);g.eggs=g.eggs.filter(e=>e.id!==egg.id);
-  let msg;if(rarOf(sp)==='legendary'&&!g.unlocked.includes(sp.id)){g.unlocked.push(sp.id);msg='🔓 Nouveau légendaire débloqué ! Tu peux le choisir dans ton équipe.'}
+  let msg;if(LOCKED_R.includes(rarOf(sp))&&!g.unlocked.includes(sp.id)){g.unlocked.push(sp.id);msg=rarOf(sp)==='secret'?'🌈 INCROYABLE ! Combattant SECRET débloqué ! Tu peux le choisir dans ton équipe.':'🔓 Nouveau légendaire débloqué ! Tu peux le choisir dans ton équipe.'}
   else{const n=Math.min(5,(g.stars[sp.id]||0)+1);g.stars[sp.id]=n;msg=`⭐ ${esc(sp.name)} gagne une étoile (${n}/5) : il commencera au niveau ${5+2*n} !`}
   setGacha(g);
   const box=$('#modalBox');box.innerHTML=`<h3>Oh ? Un œuf éclot !</h3><div class="hatch">${eggHTML(egg.tier,'big wob')}</div>`;$('#modal').classList.remove('hidden');
-  await sleep(1700);const f=document.createElement('div');f.className='flash'+(egg.tier==='legendary'?' gold':'');document.body.appendChild(f);setTimeout(()=>f.remove(),1000);
+  await sleep(1700);const f=document.createElement('div');f.className='flash'+(egg.tier==='secret'?' rainbow':egg.tier==='legendary'?' gold':'');document.body.appendChild(f);setTimeout(()=>f.remove(),1000);
   await new Promise(r=>{box.innerHTML=`<h3>Un œuf a éclos !</h3><div class="hatch"><div class="av">${av(sp)}</div><div class="nm">${esc(sp.name)}</div><div>${sp.types.map(tb).join('')}${rtag(sp)}</div><div class="modtxt" style="margin-top:12px">${msg}</div></div>`;
    const b=document.createElement('button');b.className='opt cancel';b.textContent='Super !';b.onclick=()=>{$('#modal').classList.add('hidden');r()};box.appendChild(b)})}}
  finally{hatching=false}
@@ -412,7 +413,7 @@ function help(){choose('Comment jouer',[],{cancel:'Compris !',body:`<div class="
 • Après chaque victoire, choisis 1 récompense sur 3 : potions, Contrats, Super Bonbons, boosts de stats, nouvelles attaques…<br>
 • Affaiblis un adversaire, puis utilise un <b>📝 Contrat</b> pour le recruter.<br>
 • Profite des types (voir la Table des types) pour frapper fort.<br>
-• Chaque combattant a une rareté : ⚪ Commune, 🔵 Rare, 🟣 Épique ou 🟡 Légendaire. Plus il est rare, moins on le croise et plus il est dur à recruter. Les 🟡 légendaires s’obtiennent uniquement à la <b>🥚 machine à tirage</b> !<br>
+• Chaque combattant a une rareté : ⚪ Commune, 🔵 Rare, 🟣 Épique ou 🟡 Légendaire. Plus il est rare, moins on le croise et plus il est dur à recruter. Les 🟡 légendaires se croisent très rarement à partir de la vague 8. Les 🌈 <b>secrets</b> (1 chance sur 250) s’obtiennent uniquement dans les œufs de la <b>🥚 machine à tirage</b> ! Recruter ou faire éclore un légendaire le débloque comme starter.<br>
 • Tickets 🎟️ : tu en gagnes 1 à chaque boss vaincu. Les œufs éclosent après quelques vagues jouées. Un combattant déjà obtenu gagne une ⭐ (il commence 2 niveaux plus haut).<br>
 • Tes combattants apprennent de nouvelles attaques en montant de niveau.<br>
 • Un combattant K.O. le reste jusqu’à ce que tu utilises un Rappel. Si tout le monde est K.O., la partie est finie. Jusqu’où iras-tu ?<br><br>

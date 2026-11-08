@@ -169,6 +169,10 @@ table.tc th{font-weight:normal}
 .card.locked .av img{filter:brightness(0) drop-shadow(0 0 6px #f59e0b)}
 .card .lockt{display:block;margin-top:4px;font-size:15px;color:#f59e0b}
 .card .stars{position:absolute;top:24px;right:6px;font-size:12px;color:var(--acc);font-family:'Press Start 2P',monospace}
+.card.secret{box-shadow:0 0 16px #ff4fd8aa}
+.rt.sec{background:linear-gradient(90deg,#ff4f4f,#ffcf4a,#4ade80,#3fa7ff,#c084fc);color:#1a1426;border-color:#fff8}
+.egg.secret{background:linear-gradient(160deg,#ff9a9a,#ffe08a,#9af0b0,#9ad0ff,#e0a8ff);--sp:#ffffffcc;box-shadow:0 0 16px #ff4fd8}
+.flash.rainbow{background:linear-gradient(90deg,#ff4f4f,#ffcf4a,#4ade80,#3fa7ff,#c084fc)}
 .tcs{display:grid;gap:6px}
 .tcr{display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;align-items:center;background:var(--panel2);border-radius:8px;padding:8px 10px}
 .tcr .tb{font-size:8px;padding:4px 6px}.tct .tb{font-size:9px;padding:6px 8px}
@@ -317,8 +321,8 @@ button.link{background:none;border:none;color:var(--dim);font-family:'VT323',mon
         <div><label>Type 2</label><select id="edT2"></select></div>
       </div>
       <div class="fld"><label>Rareté</label>
-        <select id="edRar"><option value="common">⚪ Commune</option><option value="rare">🔵 Rare</option><option value="epic">🟣 Épique</option><option value="legendary">🟡 Légendaire</option></select>
-        <div class="note" style="margin-top:4px">Plus c’est rare : moins on le croise, plus il coûte cher en début de partie et plus il est dur à recruter. Les 🟡 légendaires ne se trouvent jamais en combat : on les obtient uniquement à la 🥚 machine à tirage.</div>
+        <select id="edRar"><option value="common">⚪ Commune</option><option value="rare">🔵 Rare</option><option value="epic">🟣 Épique</option><option value="legendary">🟡 Légendaire</option><option value="secret">🌈 Secret</option></select>
+        <div class="note" style="margin-top:4px">Plus c’est rare : moins on le croise, plus il coûte cher en début de partie et plus il est dur à recruter. Les 🟡 légendaires apparaissent en combat à partir de la vague 8 (très rarement) ou dans les œufs. Les 🌈 secrets s’obtiennent <b>uniquement dans les œufs</b> (1 chance sur 250).</div>
       </div>
       <div class="fld"><label>Stats de base <span id="edBst"></span></label>
         <div id="edStats"></div>
