@@ -130,6 +130,11 @@ table.tc{border-collapse:collapse;margin:auto;font-size:18px}
 table.tc td,table.tc th{border:1px solid var(--line);padding:3px 5px;text-align:center;min-width:30px}
 table.tc th{font-weight:normal}
 .x2{background:#14532d;color:#86efac}.x05{background:#4c1d1d;color:#fca5a5}
+.rt{display:inline-block;font-family:'Press Start 2P',monospace;font-size:7px;padding:2px 4px;border-radius:4px;border:1px solid var(--rc);color:var(--rc);background:#0002;margin-left:2px;vertical-align:middle}
+.card{border-bottom:4px solid var(--rc,var(--line))}.card.sel{border-bottom-color:var(--rc,var(--acc))}
+.card.legendary{box-shadow:0 0 14px #f59e0b88}.card.epic{box-shadow:0 0 10px #a855f755}
+#eMon.legendary .spr{animation:shine 1.6s ease-in-out infinite}
+@keyframes shine{50%{filter:drop-shadow(0 0 14px #f59e0b) drop-shadow(0 4px 0 #0004)}}
 .tcs{display:grid;gap:6px}
 .tcr{display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;align-items:center;background:var(--panel2);border-radius:8px;padding:8px 10px}
 .tcr .tb{font-size:8px;padding:4px 6px}.tct .tb{font-size:9px;padding:6px 8px}
@@ -275,6 +280,10 @@ button.link{background:none;border:none;color:var(--dim);font-family:'VT323',mon
       <div class="fld" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div><label>Type 1</label><select id="edT1"></select></div>
         <div><label>Type 2</label><select id="edT2"></select></div>
+      </div>
+      <div class="fld"><label>Rareté</label>
+        <select id="edRar"><option value="common">⚪ Commune</option><option value="rare">🔵 Rare</option><option value="epic">🟣 Épique</option><option value="legendary">🟡 Légendaire</option></select>
+        <div class="note" style="margin-top:4px">Plus c’est rare : moins on le croise, plus il coûte cher en début de partie et plus il est dur à recruter. Les légendaires n’apparaissent qu’à partir de la vague 8.</div>
       </div>
       <div class="fld"><label>Stats de base <span id="edBst"></span></label>
         <div id="edStats"></div>

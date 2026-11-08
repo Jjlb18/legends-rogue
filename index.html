@@ -130,6 +130,11 @@ table.tc{border-collapse:collapse;margin:auto;font-size:18px}
 table.tc td,table.tc th{border:1px solid var(--line);padding:3px 5px;text-align:center;min-width:30px}
 table.tc th{font-weight:normal}
 .x2{background:#14532d;color:#86efac}.x05{background:#4c1d1d;color:#fca5a5}
+.rt{display:inline-block;font-family:'Press Start 2P',monospace;font-size:7px;padding:2px 4px;border-radius:4px;border:1px solid var(--rc);color:var(--rc);background:#0002;margin-left:2px;vertical-align:middle}
+.card{border-bottom:4px solid var(--rc,var(--line))}.card.sel{border-bottom-color:var(--rc,var(--acc))}
+.card.legendary{box-shadow:0 0 14px #f59e0b88}.card.epic{box-shadow:0 0 10px #a855f755}
+#eMon.legendary .spr{animation:shine 1.6s ease-in-out infinite}
+@keyframes shine{50%{filter:drop-shadow(0 0 14px #f59e0b) drop-shadow(0 4px 0 #0004)}}
 .tcs{display:grid;gap:6px}
 .tcr{display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;align-items:center;background:var(--panel2);border-radius:8px;padding:8px 10px}
 .tcr .tb{font-size:8px;padding:4px 6px}.tct .tb{font-size:9px;padding:6px 8px}
@@ -276,6 +281,10 @@ button.link{background:none;border:none;color:var(--dim);font-family:'VT323',mon
         <div><label>Type 1</label><select id="edT1"></select></div>
         <div><label>Type 2</label><select id="edT2"></select></div>
       </div>
+      <div class="fld"><label>Rareté</label>
+        <select id="edRar"><option value="common">⚪ Commune</option><option value="rare">🔵 Rare</option><option value="epic">🟣 Épique</option><option value="legendary">🟡 Légendaire</option></select>
+        <div class="note" style="margin-top:4px">Plus c’est rare : moins on le croise, plus il coûte cher en début de partie et plus il est dur à recruter. Les légendaires n’apparaissent qu’à partir de la vague 8.</div>
+      </div>
       <div class="fld"><label>Stats de base <span id="edBst"></span></label>
         <div id="edStats"></div>
       </div>
@@ -408,16 +417,23 @@ const ROSTER=[
 ['lincoln','Abraham Lincoln','🎩',['Politics'],75,65,70,50],
 ['chaplin','Charlie Chaplin','🎬',['Art','Sport'],55,60,55,85]];
 const SPECIES={},DEFAULTS=[],ORIG={};
-ROSTER.forEach(r=>{const s={id:r[0],name:r[1],emoji:r[2],types:r[3],base:{hp:r[4],atk:r[5],def:r[6],spd:r[7]},moves:genMoves(r[3])};SPECIES[s.id]=s;ORIG[s.id]=s;DEFAULTS.push(s)});
+const DEF_RAR={hercules:'legendary',davinci:'legendary',tesla:'epic',cleopatra:'epic',genghis:'epic',caesar:'epic',mozart:'epic',
+ napoleon:'rare',joan:'rare',curie:'rare',newton:'rare',beethoven:'rare',houdini:'rare',shakespeare:'rare',einstein:'rare',rasputin:'rare'};
+ROSTER.forEach(r=>{const s={id:r[0],name:r[1],emoji:r[2],types:r[3],rarity:DEF_RAR[r[0]]||'common',base:{hp:r[4],atk:r[5],def:r[6],spd:r[7]},moves:genMoves(r[3])};SPECIES[s.id]=s;ORIG[s.id]=s;DEFAULTS.push(s)});
 let overrides=LS.get('lr_overrides',{});
-function applyOv(id){const s=overrides[id]?Object.assign({},overrides[id],{id}):ORIG[id];SPECIES[id]=s;DEFAULTS[DEFAULTS.findIndex(x=>x.id===id)]=s}
+function applyOv(id){const s=overrides[id]?Object.assign({},ORIG[id],overrides[id],{id}):ORIG[id];SPECIES[id]=s;DEFAULTS[DEFAULTS.findIndex(x=>x.id===id)]=s}
 Object.keys(overrides).forEach(id=>{if(ORIG[id])applyOv(id);else delete overrides[id]});
 let customs=LS.get('lr_species',[]);customs.forEach(s=>SPECIES[s.id]=s);
 let settings=Object.assign({useDefaults:true,fast:false},LS.get('lr_settings',{}));
 let rosterOpts=Object.assign({useDefaults:true},LS.get('lr_rosteropts',{}));
 const SPEED=()=>settings.fast?.45:1;
 const bst=s=>s.base.hp+s.base.atk+s.base.def+s.base.spd;
-const costOf=s=>clamp(Math.round((bst(s)-180)/30),1,6);
+const RAR={common:{n:'Commune',c:'#9ca3af',w:100,cost:0,catch:1},rare:{n:'Rare',c:'#3b82f6',w:40,cost:1,catch:.8},
+ epic:{n:'Épique',c:'#a855f7',w:18,cost:2,catch:.6},legendary:{n:'Légendaire',c:'#f59e0b',w:6,cost:3,catch:.4}};
+const rarOf=s=>s&&RAR[s.rarity]?s.rarity:(bst(s)>=300?'legendary':bst(s)>=275?'epic':bst(s)>=258?'rare':'common');
+const rtag=s=>{const r=RAR[rarOf(s)];return `<span class="rt" style="--rc:${r.c}">${r.n}</span>`};
+const costOf=s=>clamp(Math.round((bst(s)-180)/30)+RAR[rarOf(s)].cost,1,9);
+function wpick(list){const tot=list.reduce((a,s)=>a+RAR[rarOf(s)].w,0);let x=Math.random()*tot;for(const s of list)if((x-=RAR[rarOf(s)].w)<0)return s;return list[list.length-1]}
 function allSpecies(){const l=(rosterOpts.useDefaults?DEFAULTS:[]).concat(customs);return l.length?l:DEFAULTS}
 // ---------- pixel sprites ----------
 const PX=32,PXC=new Map();
@@ -501,7 +517,7 @@ function choose(ttl,opts,o={}){return new Promise(res=>{const box=$('#modalBox')
  $('#modal').classList.remove('hidden')})}
 function memberHTML(f,extra=''){const p=f.hp/f.maxhp;const sp=SPECIES[f.sid];
  return `<div class="mem"><div class="av">${av(sp)}</div><div class="bx"><div>${esc(sp.name)} <small style="display:inline">N.${f.lvl}</small> ${extra}</div>
- <div>${sp.types.map(tb).join('')}</div><div class="bar"><i style="width:${p*100}%;background:${hpCol(p)}"></i></div><small>${f.hp>0?f.hp+' / '+f.maxhp+' PV':'K.O.'}</small></div></div>`}
+ <div>${sp.types.map(tb).join('')}${rtag(sp)}</div><div class="bar"><i style="width:${p*100}%;background:${hpCol(p)}"></i></div><small>${f.hp>0?f.hp+' / '+f.maxhp+' PV':'K.O.'}</small></div></div>`}
 const hpCol=p=>p>.5?'var(--good)':p>.2?'var(--mid)':'var(--bad)';
 
 // ---------- starter select ----------
@@ -513,7 +529,7 @@ function renderStarters(){const used=picks.reduce((a,id)=>a+costOf(SPECIES[id]),
  $('#stGo').disabled=!picks.length;
  const list=[...customs,...(rosterOpts.useDefaults||!customs.length?DEFAULTS:[])];
  $('#stGrid').innerHTML=list.map(s=>{const sel=picks.includes(s.id),c=costOf(s),can=sel||(used+c<=BUDGET&&picks.length<6);
-  return `<div class="card ${sel?'sel':''} ${can?'':'no'}" data-id="${esc(s.id)}">${customs.includes(s)?'<span class="star">★</span>':''}<span class="cost">${c}</span><div class="av">${av(s)}</div><div class="nm">${esc(s.name)}</div><div>${s.types.map(tb).join('')}</div></div>`}).join('');
+  return `<div class="card ${rarOf(s)} ${sel?'sel':''} ${can?'':'no'}" style="--rc:${RAR[rarOf(s)].c}" data-id="${esc(s.id)}">${customs.includes(s)?'<span class="star">★</span>':''}<span class="cost">${c}</span><div class="av">${av(s)}</div><div class="nm">${esc(s.name)}</div><div>${s.types.map(tb).join('')}</div><div style="margin-top:4px">${rtag(s)}</div></div>`}).join('');
  $('#stGrid').querySelectorAll('.card').forEach(el=>el.onclick=()=>{const id=el.dataset.id;const i=picks.indexOf(id);
   if(i>=0)picks.splice(i,1);else{const c=costOf(SPECIES[id]);if(used+c>BUDGET||picks.length>=6)return toast('Pas assez de points');picks.push(id)}renderStarters()})}
 function startRun(){const order=[...BIOMES.keys()].sort(()=>Math.random()-.5);
@@ -523,11 +539,11 @@ function startRun(){const order=[...BIOMES.keys()].sort(()=>Math.random()-.5);
 // ---------- battle rendering ----------
 function infoHTML(f,isP){const sp=SPECIES[f.sid];
  return `<div class="row"><span class="n">${f.boss?'<span class="crown">♛</span> ':''}${esc(sp.name)}</span><span class="lv">N.${f.lvl}</span></div>
- <div>${sp.types.map(tb).join('')}</div><div class="bar"><i class="hpf"></i></div>${isP?'<div class="hpt"></div><div class="bar exp"><i class="xpf"></i></div>':''}<div class="stg"></div>`}
+ <div>${sp.types.map(tb).join('')}${rtag(sp)}</div><div class="bar"><i class="hpf"></i></div>${isP?'<div class="hpt"></div><div class="bar exp"><i class="xpf"></i></div>':''}<div class="stg"></div>`}
 function renderBattle(enter){const e=G.enemy,p=G.party[G.active];
  $('#eInfo').innerHTML=infoHTML(e,false);$('#pInfo').innerHTML=infoHTML(p,true);
  $('#eSpr').innerHTML=av(SPECIES[e.sid]);$('#pSpr').innerHTML=av(SPECIES[p.sid]);
- $('#eMon').classList.toggle('boss',!!e.boss);
+ $('#eMon').classList.toggle('boss',!!e.boss);$('#eMon').classList.toggle('legendary',rarOf(SPECIES[e.sid])==='legendary');
  ['#eSpr','#pSpr'].forEach(s=>{const el=$(s);el.className='spr';if(enter){void el.offsetWidth;el.classList.add('enter')}});
  const b=curBiome();$('#arena').style.background=`linear-gradient(${b.sky},${b.sky} 58%,transparent 58%)`;$('#arena').style.setProperty('--ground',b.gr);
  $('#waveTxt').textContent=`Vague ${G.wave} · ${b.n}`;$('#spdBtn').style.color=settings.fast?'var(--acc)':'';
@@ -607,7 +623,7 @@ async function openTeam(){const i=await choose('Équipe — qui faire entrer ?',
  await say(`En avant, ${nmOf(act())} !`,700);await enemyTurn()}
 async function doRecruit(){if(G.bag.contract<=0)return toast('Plus de Contrats !');lockUI();G.bag.contract--;upd();
  const e=G.enemy,n=nmOf(e);await say(`Tu proposes un Contrat à ${n}…`,900);
- const rate=Math.min(.95,(e.boss?.3:1)*(1-.8*e.hp/e.maxhp)+.1);anim('#eSpr','wobble');await sleep(1300*SPEED());
+ const rate=Math.min(.95,(e.boss?.3:1)*RAR[rarOf(SPECIES[e.sid])].catch*(1-.8*e.hp/e.maxhp)+.1);anim('#eSpr','wobble');await sleep(1300*SPEED());
  if(Math.random()<rate){await say(`✍️ ${n} signe le Contrat !`);if(await addToParty(e))await say(`${n} rejoint ton équipe !`);await winBattle(true)}
  else{await say(`${n} déchire le Contrat !`);await enemyTurn()}}
 async function addToParty(e){const f=JSON.parse(JSON.stringify(e));f.uid=Math.random().toString(36).slice(2);delete f.boss;calc(f);f.hp=Math.max(1,Math.ceil(e.hp/e.maxhp*f.maxhp));resetSt(f);
@@ -654,7 +670,8 @@ async function rewards(){const pool=[...REWARDS],out=[];
  else{r.fn();await say(`Tu obtiens : ${r.n} !`,800)}upd()}
 function genEnemy(){const w=G.wave,boss=w%10===0;let pool=allSpecies();
  if(boss){const s=[...pool].sort((a,b)=>bst(b)-bst(a));pool=s.slice(0,Math.max(1,Math.ceil(s.length/2)))}
- const fav=pool.filter(s=>s.types.includes(curBiome().t));const sp=fav.length&&Math.random()<.5?pick(fav):pick(pool);
+ if(!boss&&w<8){const nl=pool.filter(s=>rarOf(s)!=='legendary');if(nl.length)pool=nl}
+ const fav=pool.filter(s=>s.types.includes(curBiome().t));const sp=boss?pick(pool):fav.length&&Math.random()<.5?wpick(fav):wpick(pool);
  const lvl=Math.min(100,Math.max(2,Math.round(2+w*.6+rnd(-1,1)))+(boss?3:0));const e=makeFighter(sp.id,lvl);
  if(boss){e.boss=true;calc(e);e.hp=e.maxhp}return e}
 async function nextWave(){if(!G.party.some(f=>f.hp>0))return gameOver();
@@ -662,7 +679,7 @@ async function nextWave(){if(!G.party.some(f=>f.hp>0))return gameOver();
  if(act().hp<=0){renderBattle(false);const i=await choose('Qui mène le prochain combat ?',G.party.map((f,i)=>({value:i,html:memberHTML(f),disabled:f.hp<=0})));G.active=i}
  save();renderBattle(true);busy=true;$('#cmd').innerHTML='';
  if(newBiome)await say(`📍 Tu entres dans : ${curBiome().n}.`,1100);
- await say(G.enemy.boss?`👑 Le BOSS ${nmOf(G.enemy)} bloque le passage !`:`Un ${nmOf(G.enemy)} sauvage apparaît !`);
+ await say(G.enemy.boss?`👑 Le BOSS ${nmOf(G.enemy)} bloque le passage !`:({legendary:`✨ Un ${nmOf(G.enemy)} LÉGENDAIRE sauvage apparaît !`,epic:`🟣 Un ${nmOf(G.enemy)} épique sauvage apparaît !`,rare:`🔵 Un ${nmOf(G.enemy)} rare sauvage apparaît !`}[rarOf(SPECIES[G.enemy.sid])]||`Un ${nmOf(G.enemy)} sauvage apparaît !`));
  showMain()}
 async function gameOver(){const w=G.wave;const best=Math.max(LS.get('lr_best',0),w);LS.set('lr_best',best);LS.del('lr_run');
  await say('Toute ton équipe est épuisée…',1400);
@@ -683,6 +700,7 @@ function help(){choose('Comment jouer',[],{cancel:'Compris !',body:`<div class="
 • Après chaque victoire, choisis 1 récompense sur 3 : potions, Contrats, Super Bonbons, boosts de stats, nouvelles attaques…<br>
 • Affaiblis un adversaire, puis utilise un <b>📝 Contrat</b> pour le recruter.<br>
 • Profite des types (voir la Table des types) pour frapper fort.<br>
+• Chaque combattant a une rareté : ⚪ Commune, 🔵 Rare, 🟣 Épique ou 🟡 Légendaire. Plus il est rare, moins on le croise et plus il est dur à recruter !<br>
 • Tes combattants apprennent de nouvelles attaques en montant de niveau.<br>
 • Un combattant K.O. le reste jusqu’à ce que tu utilises un Rappel. Si tout le monde est K.O., la partie est finie. Jusqu’où iras-tu ?<br><br>
 De nouveaux combattants sont ajoutés régulièrement par le créateur du jeu !</div>`})}
@@ -698,15 +716,15 @@ function edInit(){const to=(arr,none)=>(none?'<option value="">Aucun</option>':'
  ['hp','atk','def','spd'].forEach(k=>$('#es_'+k).oninput=edStatUpd);
  $('#edMoves').innerHTML=LEARN_AT.map((l,i)=>`<div>Niv. ${l}<select id="em_${i}"></select></div>`).join('')}
 function edStatUpd(){let t=0;['hp','atk','def','spd'].forEach(k=>{const v=+$('#es_'+k).value;$('#ev_'+k).textContent=v;t+=v});
- $('#edBst').textContent=`· total ${t} · coûte ${costOf({base:{hp:t,atk:0,def:0,spd:0}})} pts`}
+ $('#edBst').textContent=`· total ${t} · coûte ${costOf({base:{hp:t,atk:0,def:0,spd:0},rarity:$('#edRar').value})} pts`}
 function edFillMoves(ms){LEARN_AT.forEach((_,i)=>$('#em_'+i).innerHTML=moveOptions(ms[i]||''))}
 function edPrev(){$('#edPrev').innerHTML=av({img:ed.img,pv:ed.pv,emoji:$('#edEmoji').value.trim()||'⭐'});$('#edNoImg').classList.toggle('hidden',!ed.img)}
 function edLoad(s){ed={id:s?s.id:null,img:s?s.img||null:null,px:!!(s&&s.px),pv:s?s.pv||0:0};$('#edTitle').textContent=s?(ORIG[s.id]?`Modifier ${s.name} (de base)`:'Modifier le combattant'):'Nouveau combattant';
  $('#edSave').textContent=s&&ORIG[s.id]?'Enregistrer les modifications':'Enregistrer';
- $('#edName').value=s?s.name:'';$('#edEmoji').value=s?s.emoji||'⭐':'⭐';$('#edT1').value=s?s.types[0]:'Science';$('#edT2').value=s&&s.types[1]?s.types[1]:'';
+ $('#edName').value=s?s.name:'';$('#edEmoji').value=s?s.emoji||'⭐':'⭐';$('#edT1').value=s?s.types[0]:'Science';$('#edT2').value=s&&s.types[1]?s.types[1]:'';$('#edRar').value=s?rarOf(s):'common';edStatUpd();
  ['hp','atk','def','spd'].forEach(k=>$('#es_'+k).value=s?s.base[k]:65);edStatUpd();edFillMoves(s?s.moves:genMoves([$('#edT1').value]));edPrev()}
-function edList(){$('#edList').innerHTML=customs.length?customs.map(s=>`<div class="it"><span class="av">${av(s)}</span><div class="t">${esc(s.name)}<br>${s.types.map(tb).join('')}</div><button data-e="${esc(s.id)}">Modifier</button><button data-d="${esc(s.id)}">Supprimer</button></div>`).join(''):'<div class="note">Aucun combattant perso pour l’instant. Crée-en un à gauche !</div>';
- $('#edBuiltin').innerHTML=DEFAULTS.map(s=>`<div class="it"><span class="av">${av(s)}</span><div class="t">${esc(s.name)}${overrides[s.id]?' <small style="color:var(--acc)">modifié</small>':''}<br>${s.types.map(tb).join('')}</div><button data-e="${esc(s.id)}">Modifier</button>${overrides[s.id]?`<button data-r="${esc(s.id)}">Réinitialiser</button>`:''}</div>`).join('');
+function edList(){$('#edList').innerHTML=customs.length?customs.map(s=>`<div class="it"><span class="av">${av(s)}</span><div class="t">${esc(s.name)}<br>${s.types.map(tb).join('')}${rtag(s)}</div><button data-e="${esc(s.id)}">Modifier</button><button data-d="${esc(s.id)}">Supprimer</button></div>`).join(''):'<div class="note">Aucun combattant perso pour l’instant. Crée-en un à gauche !</div>';
+ $('#edBuiltin').innerHTML=DEFAULTS.map(s=>`<div class="it"><span class="av">${av(s)}</span><div class="t">${esc(s.name)}${overrides[s.id]?' <small style="color:var(--acc)">modifié</small>':''}<br>${s.types.map(tb).join('')}${rtag(s)}</div><button data-e="${esc(s.id)}">Modifier</button>${overrides[s.id]?`<button data-r="${esc(s.id)}">Réinitialiser</button>`:''}</div>`).join('');
  $('#s-editor').querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{edLoad(SPECIES[b.dataset.e]);window.scrollTo(0,0)});
  $('#edBuiltin').querySelectorAll('[data-r]').forEach(b=>b.onclick=async()=>{const id=b.dataset.r;const ok=await choose(`Remettre ${esc(SPECIES[id].name)} comme à l’origine (${esc(ORIG[id].name)}) ?`,[{value:1,label:'Oui, réinitialiser'},{value:0,label:'Annuler'}],{cols:2});
   if(!ok)return;delete overrides[id];applyOv(id);LS.set('lr_overrides',overrides);if(ed.id===id)edLoad(SPECIES[id]);edList()});
@@ -717,7 +735,7 @@ function editorScreen(){if(!isAdmin())return;show('s-editor');$('#useDef').check
 function edSave(){const name=$('#edName').value.trim();if(!name)return toast('Donne un nom à ton combattant');
  const t1=$('#edT1').value,t2=$('#edT2').value;const types=t2&&t2!==t1?[t1,t2]:[t1];
  const moves=LEARN_AT.map((_,i)=>$('#em_'+i).value);if(!moves.some(Boolean))return toast('Choisis au moins une attaque');
- const s={id:ed.id||'c_'+Date.now().toString(36),name,emoji:$('#edEmoji').value.trim()||'⭐',img:ed.img||null,types,
+ const s={id:ed.id||'c_'+Date.now().toString(36),name,emoji:$('#edEmoji').value.trim()||'⭐',img:ed.img||null,types,rarity:$('#edRar').value,
   base:{hp:+$('#es_hp').value,atk:+$('#es_atk').value,def:+$('#es_def').value,spd:+$('#es_spd').value},moves,px:!!(ed.img&&ed.px),pv:ed.img?ed.pv:0};
  let ok;if(ORIG[s.id]){overrides[s.id]=s;applyOv(s.id);ok=LS.set('lr_overrides',overrides)}
  else{s.custom=true;const i=customs.findIndex(x=>x.id===s.id);if(i>=0)customs[i]=s;else customs.push(s);SPECIES[s.id]=s;ok=LS.set('lr_species',customs)}
@@ -734,7 +752,7 @@ $('#quitBtn').onclick=async()=>{const v=await choose('Quitter la partie ? Elle e
 edInit();
 $('#edT1').onchange=$('#edT2').onchange=()=>{if(!ed.id)$('#edAuto').click()};
 $('#edAuto').onclick=()=>{const t2=$('#edT2').value;edFillMoves(genMoves(t2&&t2!==$('#edT1').value?[$('#edT1').value,t2]:[$('#edT1').value]))};
-$('#edEmoji').oninput=edPrev;
+$('#edEmoji').oninput=edPrev;$('#edRar').onchange=edStatUpd;
 $('#edFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{ed.img=await loadImg(f);ed.px=true;ed.pv=2;edPrev()}catch(x){toast('Impossible de lire cette image')}e.target.value=''};
 $('#edNoImg').onclick=()=>{ed.img=null;edPrev()};
 $('#edSave').onclick=edSave;$('#edReset').onclick=()=>edLoad(null);
