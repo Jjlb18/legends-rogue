@@ -292,7 +292,7 @@ button.link{background:none;border:none;color:var(--dim);font-family:'VT323',mon
 
 <section id="s-battle" class="screen hidden">
   <div id="arena">
-    <div id="waveTag"><span id="waveTxt"></span><button id="spdBtn" title="Vitesse du texte">▶▶</button><button id="quitBtn" title="Retour au menu">✕</button></div>
+    <div id="waveTag"><span id="waveTxt"></span><button id="eggBtn" title="Tirage et œufs">🥚</button><button id="spdBtn" title="Vitesse du texte">▶▶</button><button id="quitBtn" title="Retour au menu">✕</button></div>
     <div class="info" id="eInfo"></div>
     <div class="mon" id="eMon"><div class="plat"></div><div class="spr" id="eSpr"></div></div>
     <div class="mon" id="pMon"><div class="plat"></div><div class="spr" id="pSpr"></div></div>
@@ -760,7 +760,7 @@ function pickHatch(tier){for(let i=TIERS.indexOf(tier);i>=0;i--){const p=rosterA
 const eggHTML=(t,c='',st='')=>`<div class="egg ${t} ${c}" style="${st}"><i></i></div>`;
 async function gachaTick(boss){const g=gacha();let ready=0;g.eggs.forEach(e=>{if(e.left>0){e.left--;if(!e.left)ready++}});if(boss)g.tickets++;setGacha(g);
  if(boss)await say('🎟️ +1 ticket de tirage !',1000);
- if(ready)await say(ready>1?`🥚 ${ready} œufs sont prêts à éclore ! Retourne au menu pour les voir.`:'🥚 Un œuf est prêt à éclore ! Retourne au menu pour le voir.',1400)}
+ if(ready)await say(ready>1?`🥚 ${ready} œufs sont prêts à éclore ! Touche 🥚 en haut pour les voir.`:'🥚 Un œuf est prêt à éclore ! Touche 🥚 en haut pour le voir.',1400)}
 function openGacha(res){const g=gacha(),box=$('#modalBox');
  const best=res&&TIERS[Math.max(...res.map(t=>TIERS.indexOf(t)))];
  box.innerHTML=`<h3>🥚 Machine à tirage</h3>
@@ -770,12 +770,12 @@ function openGacha(res){const g=gacha(),box=$('#modalBox');
    <div class="rates">Chances : ⚪ Commun 70 % · 🔵 Rare 22 % · 🟣 Épique 6,1 % · 🟡 Légendaire 1,5 % · ⚫ Secret 0,4 % (1 sur 250)<br>🟡 Légendaire garanti dans ${PITY-g.pity} tirage${PITY-g.pity>1?'s':''} maximum.<br>×10 : au moins un œuf 🔵 Rare ou mieux.</div>
    <div class="btnrow"><button class="primary" id="pull1" ${g.tickets<1?'disabled':''}>Tirer ×1 · 🎟️1</button><button id="pull10" ${g.tickets<10?'disabled':''}>Tirer ×10 · 🎟️10</button></div>
    <div id="pullRes">${res?res.map((t,i)=>eggHTML(t,'pop',`animation-delay:${i*.08}s`)).join('')+`<div class="lbl" style="color:${RAR[best].c}">${res.length>1?'Meilleur œuf':'Œuf'} : ${EGG[best].n}${best==='secret'?' !!!!! ⚫⚫⚫':best==='legendary'?' !!! ✨':' !'}</div>`:''}</div></div></div>
- <h3 style="margin-top:16px">Œufs en incubation (${g.eggs.length})</h3>
+ <h3 style="margin-top:16px">Œufs en incubation (${g.eggs.length})</h3>${g.eggs.some(e=>e.left<=0)?`<div class="btnrow" style="margin:0 0 10px"><button class="primary" id="hatchNow">🐣 Faire éclore (${g.eggs.filter(e=>e.left<=0).length})</button></div>`:''}
  <div class="eggs">${g.eggs.length?g.eggs.map(e=>`<div class="eg">${eggHTML(e.tier)}${e.left>0?e.left+' vague'+(e.left>1?'s':''):'Prêt !'}</div>`).join(''):'<span class="note">Aucun œuf pour l’instant.</span>'}</div>
  <div class="note">Les œufs éclosent après des vagues jouées : ⚪ 5 · 🔵 10 · 🟣 15 · 🟡 25 · ⚫ 35. Un légendaire ou un secret éclos se débloque comme starter ; un combattant déjà obtenu gagne une ⭐ (+2 niveaux au départ, max 5). Gagne 🎟️ 1 ticket par boss vaincu.</div>`;
  const c=document.createElement('button');c.className='opt cancel';c.textContent='Fermer';c.onclick=()=>{$('#modal').classList.add('hidden');if(!$('#s-title').classList.contains('hidden'))title()};box.appendChild(c);
  $('#modal').classList.remove('hidden');
- $('#pull1').onclick=()=>doPull(1);$('#pull10').onclick=()=>doPull(10)}
+ $('#pull1').onclick=()=>doPull(1);$('#pull10').onclick=()=>doPull(10);if($('#hatchNow'))$('#hatchNow').onclick=()=>{$('#modal').classList.add('hidden');hatchReady()}}
 async function doPull(n){const g=gacha();if(g.tickets<n)return;g.tickets-=n;const res=[];
  for(let i=0;i<n;i++){const t=rollTier(g,n===10&&i===n-1&&!res.some(x=>x!=='common'));res.push(t);g.eggs.push({id:Math.random().toString(36).slice(2),tier:t,left:EGG[t].waves})}
  setGacha(g);$('#pull1').disabled=$('#pull10').disabled=true;
@@ -794,7 +794,7 @@ async function hatchReady(){if(hatching)return;hatching=true;
   await new Promise(r=>{box.innerHTML=`<h3>Un œuf a éclos !</h3><div class="hatch"><div class="av">${av(sp)}</div><div class="nm">${esc(sp.name)}</div><div>${sp.types.map(tb).join('')}${rtag(sp)}</div><div class="modtxt" style="margin-top:12px">${msg}</div></div>`;
    const b=document.createElement('button');b.className='opt cancel';b.textContent='Super !';b.onclick=()=>{$('#modal').classList.add('hidden');r()};box.appendChild(b)})}}
  finally{hatching=false}
- title()}
+ if(!$('#s-title').classList.contains('hidden'))title();else if(!$('#s-battle').classList.contains('hidden')&&G)upd()}
 // ---------- gifts & admin panel ----------
 const fsBase=()=>`https://firestore.googleapis.com/v1/projects/${FIREBASE.projectId||jwtAud(ACC.idToken)}/databases/(default)/documents`;
 async function fsGet(path){const r=await fetch(`${fsBase()}/${path}`,{headers:{Authorization:'Bearer '+await idTok()}});if(r.status===404)return null;if(!r.ok)throw await fsErr(r);return r.json()}
@@ -905,7 +905,7 @@ function loadImg(file){return new Promise((res,rej)=>{const r=new FileReader();r
 
 // ---------- wiring ----------
 $('#tNew').onclick=()=>{if(LS.get('lr_run',null)){choose('Commencer une nouvelle partie ? Ta partie sauvegardée sera perdue.',[{value:1,label:'Oui, nouvelle partie'},{value:0,label:'Annuler'}],{cols:2}).then(v=>{if(v){LS.del('lr_run');starterScreen()}})}else starterScreen()};
-$('#tContinue').onclick=continueRun;$('#tAdmin').onclick=()=>adminPanel();$('#tGacha').onclick=()=>openGacha();$('#tEditor').onclick=editorScreen;$('#tTypes').onclick=typeChart;$('#tHelp').onclick=help;
+$('#tContinue').onclick=continueRun;$('#eggBtn').onclick=()=>{if(busy)return toast('Attends la fin du tour');openGacha()};$('#tAdmin').onclick=()=>adminPanel();$('#tGacha').onclick=()=>openGacha();$('#tEditor').onclick=editorScreen;$('#tTypes').onclick=typeChart;$('#tHelp').onclick=help;
 $('#stBack').onclick=title;$('#stGo').onclick=startRun;$('#edBack').onclick=title;
 $('#spdBtn').onclick=()=>{settings.fast=!settings.fast;LS.set('lr_settings',settings);$('#spdBtn').style.color=settings.fast?'var(--acc)':'';toast(settings.fast?'Texte rapide':'Texte normal')};
 $('#quitBtn').onclick=async()=>{const v=await choose('Quitter la partie ? Elle est sauvegardée au début de chaque vague.',[{value:1,label:'Retour au menu'},{value:0,label:'Continuer'}],{cols:2});if(v){G=null;busy=false;title()}};
