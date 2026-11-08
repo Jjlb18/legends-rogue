@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -178,23 +178,23 @@ summary{cursor:pointer;font-family:'Press Start 2P';font-size:9px;color:var(--ac
 <section id="s-title" class="screen">
   <div class="parade"></div>
   <h1>LEGENDS<br>ROGUE</h1>
-  <div class="sub">An endless roguelite battler starring famous people</div>
+  <div class="sub">Un roguelite de combat sans fin avec des personnes célèbres</div>
   <div class="tmenu">
-    <button id="tContinue" class="primary hidden">▶ Continue run</button>
-    <button id="tNew" class="primary">New Run</button>
-    <button id="tEditor">★ Create Fighters</button>
-    <button id="tTypes">Type Chart</button>
-    <button id="tHelp">How to play</button>
+    <button id="tContinue" class="primary hidden">▶ Continuer la partie</button>
+    <button id="tNew" class="primary">Nouvelle partie</button>
+    <button id="tEditor">★ Créer des combattants</button>
+    <button id="tTypes">Table des types</button>
+    <button id="tHelp">Comment jouer</button>
   </div>
   <div id="best"></div>
 </section>
 
 <section id="s-starter" class="screen hidden">
   <div class="topbar">
-    <button id="stBack">◀ Back</button>
-    <h2>Pick your starters</h2>
+    <button id="stBack">◀ Retour</button>
+    <h2>Choisis ton équipe</h2>
     <div id="stBudget"></div>
-    <button id="stGo" class="primary" disabled>Start ▶</button>
+    <button id="stGo" class="primary" disabled>Jouer ▶</button>
   </div>
   <div id="stChosen"></div>
   <div id="stGrid" class="grid"></div>
@@ -202,7 +202,7 @@ summary{cursor:pointer;font-family:'Press Start 2P';font-size:9px;color:var(--ac
 
 <section id="s-battle" class="screen hidden">
   <div id="arena">
-    <div id="waveTag"><span id="waveTxt"></span><button id="spdBtn" title="Text speed">▶▶</button><button id="quitBtn" title="Back to title">✕</button></div>
+    <div id="waveTag"><span id="waveTxt"></span><button id="spdBtn" title="Vitesse du texte">▶▶</button><button id="quitBtn" title="Retour au menu">✕</button></div>
     <div class="info" id="eInfo"></div>
     <div class="mon" id="eMon"><div class="plat"></div><div class="spr" id="eSpr"></div></div>
     <div class="mon" id="pMon"><div class="plat"></div><div class="spr" id="pSpr"></div></div>
@@ -214,14 +214,14 @@ summary{cursor:pointer;font-family:'Press Start 2P';font-size:9px;color:var(--ac
 
 <section id="s-editor" class="screen hidden">
   <div class="topbar">
-    <button id="edBack">◀ Back</button>
-    <h2>Create Fighters</h2>
+    <button id="edBack">◀ Retour</button>
+    <h2>Créer des combattants</h2>
   </div>
   <div class="ed-cols">
     <div class="pane">
-      <h3 id="edTitle">New fighter</h3>
-      <div class="fld"><label>Name</label><input type="text" id="edName" maxlength="26" placeholder="Type any famous person's name"></div>
-      <div class="fld"><label>Look</label>
+      <h3 id="edTitle">Nouveau combattant</h3>
+      <div class="fld"><label>Nom</label><input type="text" id="edName" maxlength="26" placeholder="Écris le nom de n’importe quelle célébrité"></div>
+      <div class="fld"><label>Apparence</label>
         <div class="look">
           <div id="edPrev">⭐</div>
           <div>
@@ -229,8 +229,8 @@ summary{cursor:pointer;font-family:'Press Start 2P';font-size:9px;color:var(--ac
             <input type="text" id="edEmoji" value="⭐" maxlength="8">
           </div>
           <div>
-            <span class="filebtn"><button type="button">Upload picture</button><input type="file" id="edFile" accept="image/*"></span>
-            <button type="button" id="edNoImg" class="hidden">Remove pic</button>
+            <span class="filebtn"><button type="button">Ajouter une photo</button><input type="file" id="edFile" accept="image/*"></span>
+            <button type="button" id="edNoImg" class="hidden">Retirer la photo</button>
           </div>
         </div>
       </div>
@@ -238,44 +238,44 @@ summary{cursor:pointer;font-family:'Press Start 2P';font-size:9px;color:var(--ac
         <div><label>Type 1</label><select id="edT1"></select></div>
         <div><label>Type 2</label><select id="edT2"></select></div>
       </div>
-      <div class="fld"><label>Base stats <span id="edBst"></span></label>
+      <div class="fld"><label>Stats de base <span id="edBst"></span></label>
         <div id="edStats"></div>
       </div>
-      <div class="fld"><label>Moves (learned at these levels)</label>
+      <div class="fld"><label>Attaques (apprises à ces niveaux)</label>
         <div class="mvslots" id="edMoves"></div>
-        <div class="btnrow"><button type="button" id="edAuto">Auto-fill from types</button></div>
+        <div class="btnrow"><button type="button" id="edAuto">Remplir selon les types</button></div>
       </div>
       <details>
-        <summary>+ Invent a custom move</summary>
+        <summary>+ Inventer une attaque</summary>
         <div class="nm-row">
-          <input type="text" id="nmName" placeholder="Move name" maxlength="22">
+          <input type="text" id="nmName" placeholder="Nom de l’attaque" maxlength="22">
           <select id="nmType"></select>
-          <label class="note">Power (0 = status) <input type="number" id="nmPow" value="70" min="0" max="150"></label>
-          <label class="note">Accuracy % <input type="number" id="nmAcc" value="95" min="30" max="100"></label>
+          <label class="note">Puissance (0 = statut) <input type="number" id="nmPow" value="70" min="0" max="150"></label>
+          <label class="note">Précision % <input type="number" id="nmAcc" value="95" min="30" max="100"></label>
           <select id="nmFx"></select>
-          <button type="button" id="nmAdd">Add move</button>
+          <button type="button" id="nmAdd">Ajouter l’attaque</button>
         </div>
         <div id="nmList" class="note" style="margin-top:8px"></div>
       </details>
       <div class="btnrow">
-        <button type="button" id="edSave" class="primary">Save fighter</button>
-        <button type="button" id="edReset">Clear form</button>
+        <button type="button" id="edSave" class="primary">Enregistrer</button>
+        <button type="button" id="edReset">Effacer</button>
       </div>
     </div>
     <div class="pane">
-      <h3>Your fighters</h3>
+      <h3>Tes combattants</h3>
       <div id="edList" class="edl"></div>
-      <label class="note" style="display:flex;gap:8px;align-items:center;margin-bottom:14px"><input type="checkbox" id="useDef"> Include the built-in historical roster in runs</label>
-      <h3>Built-in fighters</h3>
-      <div class="note" style="margin-bottom:8px">Edit any of these to change their name, look, types, stats or moves. Reset puts them back.</div>
+      <label class="note" style="display:flex;gap:8px;align-items:center;margin-bottom:14px"><input type="checkbox" id="useDef"> Inclure les personnages historiques dans les parties</label>
+      <h3>Personnages de base</h3>
+      <div class="note" style="margin-bottom:8px">Modifie-les pour changer leur nom, apparence, types, stats ou attaques. « Réinitialiser » les remet comme avant.</div>
       <div id="edBuiltin" class="edl"></div>
-      <h3>Backup / share</h3>
-      <div class="note">Export your fighters (and edits to built-ins) as text to keep a backup or send to a friend. Paste text here and hit Import to load fighters.</div>
-      <textarea id="edIO" placeholder="Exported fighters appear here…"></textarea>
+      <h3>Sauvegarder / partager</h3>
+      <div class="note">Exporte tes combattants (et tes modifications) en texte pour garder une copie ou l’envoyer à un ami. Colle un texte ici puis clique sur Importer pour les charger.</div>
+      <textarea id="edIO" placeholder="Les combattants exportés apparaissent ici…"></textarea>
       <div class="btnrow">
-        <button type="button" id="edExport">Export</button>
-        <button type="button" id="edCopy">Copy</button>
-        <button type="button" id="edImport">Import</button>
+        <button type="button" id="edExport">Exporter</button>
+        <button type="button" id="edCopy">Copier</button>
+        <button type="button" id="edImport">Importer</button>
       </div>
     </div>
   </div>

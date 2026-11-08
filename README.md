@@ -1,30 +1,30 @@
 # 👑 Legends Rogue
 
-An endless pixel-art roguelite battler starring famous people. Pick a team, battle wave after wave, recruit fighters with Contracts, beat a boss every 10 waves, and see how far you can get.
+Un roguelite de combat sans fin en pixel art, avec des personnes célèbres. Choisis ton équipe, enchaîne les vagues, recrute des combattants avec des Contrats, bats un boss toutes les 10 vagues… jusqu'où iras-tu ?
 
-## ▶ Play
+## ▶ Jouer
 
-**[Play in your browser](https://jjlb18.github.io/legends-rogue/)** (works in Edge, Chrome, Firefox and Safari, on desktop and mobile)
+**[Jouer dans le navigateur](https://jjlb18.github.io/legends-rogue/)** (Edge, Chrome, Firefox et Safari, sur ordinateur et mobile)
 
-![Battle](screenshots/screenshot-3-battle.png)
+![Combat](screenshots/screenshot-3-battle.png)
 
-## Features
+## Fonctionnalités
 
-- 30 historical fighters across 8 types: Science, Art, War, Politics, Music, Sport, Mystic and Tech
-- Type matchups, leveling, new moves, stat boosts and boss waves
-- **★ Create Fighters**: add anyone you like with an emoji or your own picture, and choose their types, stats and moves
-- Edit or reset any built-in fighter
-- Export and import your roster to share it with friends
-- Your run saves automatically in your browser
+- 30 personnages historiques et 8 types : Science, Art, Guerre, Politique, Musique, Sport, Mystique et Tech
+- Forces et faiblesses des types, niveaux, nouvelles attaques, boosts de stats et boss
+- **★ Créer des combattants** : ajoute qui tu veux avec un emoji ou ta propre photo, et choisis ses types, stats et attaques
+- Modifie ou réinitialise n'importe quel personnage de base
+- Exporte et importe tes combattants pour les partager avec tes amis
+- Ta partie est sauvegardée automatiquement dans ton navigateur
 
-## Edge extension
+## Extension Edge
 
-`legends-rogue-edge.zip` (or the `extension/` folder) is a Microsoft Edge / Chrome extension version. Clicking its icon opens the game in a new tab.
+`legends-rogue-edge.zip` (ou le dossier `extension/`) est une version extension pour Microsoft Edge / Chrome. Clique sur son icône pour ouvrir le jeu dans un nouvel onglet.
 
-To try it locally, go to `edge://extensions`, turn on **Developer mode**, click **Load unpacked** and pick the `extension` folder.
+Pour l'essayer : va sur `edge://extensions`, active le **Mode développeur**, clique sur **Charger l'extension décompressée** et choisis le dossier `extension`.
 
-## Screenshots
+## Captures d'écran
 
-| Title | Team select | Create fighters |
+| Menu | Choix de l'équipe | Créer des combattants |
 |---|---|---|
 | ![](screenshots/screenshot-1-title.png) | ![](screenshots/screenshot-2-team.png) | ![](screenshots/screenshot-4-create.png) |
