@@ -103,16 +103,33 @@ function finishPx(src){const c=document.createElement('canvas');c.width=c.height
 function emojiPx(e){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');
  x.font='96px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';x.fillStyle='#f3efe6';x.textAlign='center';x.textBaseline='middle';x.fillText(e,64,68,124);return finishPx(c)}
 // photos stay smooth inside; only the round frame is made of chunky pixels
-function imgPx(url){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>{const S=192,B=S/PX,c=document.createElement('canvas');c.width=c.height=S;const x=c.getContext('2d'),s=Math.min(im.width,im.height);
- x.imageSmoothingQuality='high';x.drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,S,S);
- const inside=(cx,cy)=>cx>=0&&cy>=0&&cx<PX&&cy<PX&&Math.hypot(cx+.5-PX/2,cy+.5-PX/2)<PX/2-1.6;
+// photos stay smooth inside; only the frame is made of chunky pixels.
+// a picture with a transparent background keeps the character's own outline; others get a round frame.
+function hasCutout(im){const c=document.createElement('canvas');c.width=c.height=48;const x=c.getContext('2d');x.drawImage(im,0,0,48,48);
+ const p=x.getImageData(0,0,48,48).data;let t=0;for(let i=3;i<p.length;i+=4)if(p[i]<128)t++;return t>48*48*.04}
+function imgPx(url){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>{const S=192,B=S/PX,c=document.createElement('canvas');c.width=c.height=S;const x=c.getContext('2d');
+ x.imageSmoothingQuality='high';let inside;
+ if(hasCutout(im)){
+  // fit the whole character inside the frame, standing on the bottom
+  const box=S-4*B,k=Math.min(box/im.width,box/im.height),w=im.width*k,h=im.height*k;
+  const src=document.createElement('canvas');src.width=src.height=S;const sx=src.getContext('2d');sx.imageSmoothingQuality='high';sx.drawImage(im,(S-w)/2,S-2*B-h,w,h);
+  const d=sx.getImageData(0,0,S,S).data,cov=new Float32Array(PX*PX),col=[];
+  for(let cy=0;cy<PX;cy++)for(let cx=0;cx<PX;cx++){let a=0,r=0,g=0,b=0;
+   for(let y=cy*B;y<cy*B+B;y++)for(let x0=cx*B;x0<cx*B+B;x0++){const i=(y*S+x0)*4,al=d[i+3]/255;a+=al;r+=d[i]*al;g+=d[i+1]*al;b+=d[i+2]*al}
+   cov[cy*PX+cx]=a/(B*B);col[cy*PX+cx]=a?`rgb(${r/a|0},${g/a|0},${b/a|0})`:'#000'}
+  inside=(cx,cy)=>cx>=0&&cy>=0&&cx<PX&&cy<PX&&cov[cy*PX+cx]>.35;
+  // solid blocks under the edge so the outline is blocky, then the smooth picture on top
+  for(let cy=0;cy<PX;cy++)for(let cx=0;cx<PX;cx++)if(inside(cx,cy)){x.fillStyle=col[cy*PX+cx];x.fillRect(cx*B,cy*B,B,B)}
+  x.drawImage(src,0,0)}
+ else{const s=Math.min(im.width,im.height);x.drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,S,S);
+  inside=(cx,cy)=>cx>=0&&cy>=0&&cx<PX&&cy<PX&&Math.hypot(cx+.5-PX/2,cy+.5-PX/2)<PX/2-1.6}
  const m=document.createElement('canvas');m.width=m.height=S;const mx=m.getContext('2d');mx.fillStyle='#000';
  for(let cy=0;cy<PX;cy++)for(let cx=0;cx<PX;cx++)if(inside(cx,cy))mx.fillRect(cx*B,cy*B,B,B);
  x.globalCompositeOperation='destination-in';x.drawImage(m,0,0);x.globalCompositeOperation='source-over';
  for(let cy=0;cy<PX;cy++)for(let cx=0;cx<PX;cx++){if(inside(cx,cy))continue;
   if(inside(cx-1,cy)||inside(cx+1,cy)||inside(cx,cy-1)||inside(cx,cy+1)){x.fillStyle='#1a1426';x.fillRect(cx*B,cy*B,B,B)}}
  for(let cy=0;cy<PX;cy++)for(let cx=0;cx<PX;cx++){if(!inside(cx,cy))continue;
-  if(!inside(cx-1,cy)||!inside(cx,cy-1)){x.fillStyle='#ffffff55';x.fillRect(cx*B,cy*B,B,B)}else if(!inside(cx+1,cy)||!inside(cx,cy+1)){x.fillStyle='#00000040';x.fillRect(cx*B,cy*B,B,B)}}
+  if(!inside(cx-1,cy)||!inside(cx,cy-1)){x.fillStyle='#ffffff40';x.fillRect(cx*B,cy*B,B,B)}else if(!inside(cx+1,cy)||!inside(cx,cy+1)){x.fillStyle='#00000035';x.fillRect(cx*B,cy*B,B,B)}}
  const w=c.toDataURL('image/webp',.85);res(w.startsWith('data:image/webp')?w:c.toDataURL('image/png'))};im.onerror=rej;im.src=url})}
 function pix(s){if(s&&s.img)return s.img;const e=(s&&s.emoji)||'⭐';if(!PXC.has(e))PXC.set(e,emojiPx(e));return PXC.get(e)}
 const av=s=>`<img class="${s&&s.img&&s.pv===2?'ph':'px'}" src="${pix(s||{emoji:'❔'})}" alt="">`;
