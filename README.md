@@ -12,6 +12,8 @@ Un roguelite de combat sans fin en pixel art, avec des personnes célèbres. Cho
 
 - 30 personnages historiques et 8 types : Science, Art, Guerre, Politique, Musique, Sport, Mystique et Tech
 - Forces et faiblesses des types, niveaux, nouvelles attaques, boosts de stats et boss
+- 🥚 Machine à tirage façon PokeRogue : tire des œufs avec des tickets, fais-les éclore en jouant et débloque les combattants 🟡 légendaires
+- Raretés : commune, rare, épique et légendaire
 - De nouveaux combattants ajoutés par le créateur du jeu, visibles par tous les joueurs
 - Crée un compte (e-mail + mot de passe) : ta partie, ton record et tes combattants te suivent sur tous tes appareils
 
