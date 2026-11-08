@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Legends Rogue",
+  "version": "1.0.0",
+  "description": "An endless pixel-art roguelite battler starring famous people. Recruit fighters, beat bosses, and create your own.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Play Legends Rogue",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}

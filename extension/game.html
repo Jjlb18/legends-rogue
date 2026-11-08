@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Legends Rogue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#14131c;--panel:#22202e;--panel2:#2d2a3d;--line:#4a4560;--txt:#f3efe6;--dim:#a49fb8;--acc:#ffcf4a;--good:#4ade80;--mid:#facc15;--bad:#ef4444}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);font-family:'VT323',monospace;font-size:20px}
+button{font-family:'Press Start 2P',monospace;font-size:11px;cursor:pointer;color:var(--txt);background:var(--panel2);border:2px solid var(--line);border-radius:6px;padding:10px 12px;line-height:1.5}
+button:hover:not(:disabled){border-color:var(--acc)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.primary{background:var(--acc);color:#1a1720;border-color:#fff3}
+h1,h2,h3{font-family:'Press Start 2P',monospace;font-weight:normal;margin:0}
+h2{font-size:14px}h3{font-size:12px;margin-bottom:10px;line-height:1.6}
+input,select,textarea{font-family:'VT323',monospace;font-size:20px;background:#15141d;color:var(--txt);border:2px solid var(--line);border-radius:6px;padding:4px 8px}
+.hidden{display:none!important}
+#app{max-width:960px;margin:0 auto;padding:12px}
+.screen{animation:fadein .3s}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.tb{display:inline-block;font-family:'Press Start 2P',monospace;font-size:7px;padding:3px 5px;border-radius:4px;color:#fff;text-shadow:0 1px 0 #0006;margin-right:3px;vertical-align:middle}
+/* title */
+#s-title{text-align:center;padding:40px 10px}
+#s-title h1{font-size:34px;color:var(--acc);text-shadow:4px 4px 0 #b5462a,8px 8px 0 #0008;line-height:1.3}
+#s-title .sub{color:var(--dim);margin:14px 0 30px;font-size:24px}
+.parade{display:flex;justify-content:center;gap:10px;margin-bottom:30px;animation:bob 2s ease-in-out infinite}.parade img{width:72px;height:72px}
+@keyframes bob{50%{transform:translateY(-8px)}}
+.tmenu{display:flex;flex-direction:column;gap:12px;max-width:320px;margin:0 auto}
+.tmenu button{font-size:13px;padding:14px}
+#best{margin-top:24px;color:var(--dim)}
+/* topbar */
+.topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.topbar h2{flex:1}
+/* starter */
+#stBudget{font-family:'Press Start 2P';font-size:10px}
+.pips{display:inline-flex;gap:3px;vertical-align:middle;margin-left:6px}
+.pip{width:12px;height:12px;border-radius:3px;background:#3a3650}.pip.on{background:var(--acc)}
+#stChosen{display:flex;gap:8px;min-height:74px;background:var(--panel);border:2px solid var(--line);border-radius:8px;padding:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+#stChosen .empty{color:var(--dim)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.card{background:var(--panel);border:2px solid var(--line);border-radius:8px;padding:8px;text-align:center;cursor:pointer;position:relative;transition:transform .1s}
+.card:hover{transform:translateY(-2px);border-color:var(--acc)}
+.card.sel{border-color:var(--acc);background:#3a3320}
+.card.no{opacity:.4}
+.card .av{font-size:40px;height:68px;display:flex;align-items:center;justify-content:center}
+.px{image-rendering:pixelated;image-rendering:crisp-edges;display:block;margin:auto}
+.ph{display:block;margin:auto}
+.card .av img{width:64px;height:64px}
+.card .nm{font-size:19px;line-height:1;margin:4px 0;min-height:38px;display:flex;align-items:center;justify-content:center}
+.card .cost{position:absolute;top:6px;right:6px;font-family:'Press Start 2P';font-size:9px;background:#0006;padding:3px 5px;border-radius:4px;color:var(--acc)}
+.card .star{position:absolute;top:6px;left:6px;color:var(--acc)}
+.mini{display:flex;align-items:center;gap:6px;background:var(--panel2);padding:4px 8px;border-radius:6px;font-size:18px}
+.mini .av img{width:32px;height:32px}
+/* battle */
+#arena{position:relative;width:100%;aspect-ratio:16/9;border-radius:10px 10px 0 0;overflow:hidden;border:3px solid var(--line);border-bottom:none;transition:background .8s}
+#arena::after{content:'';position:absolute;left:0;right:0;bottom:0;height:42%;background:var(--ground,#4b7a3a);border-top:3px solid #0003;z-index:0}
+#waveTag{position:absolute;top:8px;right:8px;z-index:3;display:flex;gap:6px;align-items:center}
+#waveTag span{font-family:'Press Start 2P';font-size:9px;background:#000a;padding:6px 8px;border-radius:5px}
+#waveTag button{padding:5px 8px;font-size:9px;background:#000a}
+.info{position:absolute;z-index:3;background:#f7f1e3ee;color:#1d1a26;border:3px solid #2b2638;border-radius:8px;padding:8px 10px;width:42%;max-width:330px;box-shadow:4px 4px 0 #0005}
+#eInfo{top:10px;left:10px}
+#pInfo{bottom:12px;right:10px}
+.info .row{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.info .n{font-size:22px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.info .lv{font-family:'Press Start 2P';font-size:9px;white-space:nowrap}
+.bar{height:9px;background:#3c3648;border-radius:5px;overflow:hidden;border:2px solid #2b2638;margin-top:4px;position:relative}
+.bar>i{display:block;height:100%;width:100%;background:var(--good);transition:width .5s ease,background .3s}
+.bar.exp{height:6px;margin-top:3px}.bar.exp>i{background:#3fa7ff}
+.hpt{font-family:'Press Start 2P';font-size:8px;text-align:right;margin-top:3px}
+.stg{font-family:'Press Start 2P';font-size:7px;margin-top:3px;min-height:9px}
+.stg b{margin-right:5px;font-weight:normal}.stg .u{color:#15803d}.stg .d{color:#b91c1c}
+.crown{color:#b45309}
+.mon{position:absolute;z-index:2;width:30%;display:flex;flex-direction:column;align-items:center}
+#eMon{right:6%;top:18%}
+#pMon{left:5%;bottom:6%}
+.plat{position:absolute;bottom:-6%;width:100%;height:26%;border-radius:50%;background:#0003;box-shadow:inset 0 -6px 0 #0002}
+.spr{position:relative;font-size:clamp(48px,11vw,104px);line-height:1;filter:drop-shadow(0 4px 0 #0004);user-select:none}
+.spr img{width:clamp(96px,18vw,176px);height:clamp(96px,18vw,176px)}
+#eMon.boss .spr{font-size:clamp(60px,14vw,130px)}
+#eMon.boss .spr img{width:clamp(120px,23vw,224px);height:clamp(120px,23vw,224px);filter:drop-shadow(0 0 10px #ffcf4a)}
+.spr.enter{animation:enter .5s ease-out}
+@keyframes enter{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.spr.hit{animation:hit .45s}
+@keyframes hit{0%,100%{transform:translateX(0);opacity:1}20%{transform:translateX(-10px);opacity:.3}40%{transform:translateX(10px);opacity:1}60%{transform:translateX(-6px);opacity:.3}80%{transform:translateX(6px)}}
+.spr.lunge-p{animation:lp .35s}@keyframes lp{50%{transform:translate(30px,-20px)}}
+.spr.lunge-e{animation:le .35s}@keyframes le{50%{transform:translate(-30px,20px)}}
+.spr.faint{animation:faint .6s forwards}@keyframes faint{to{transform:translateY(60px);opacity:0}}
+.spr.wobble{animation:wob .4s 3}@keyframes wob{25%{transform:rotate(-14deg)}75%{transform:rotate(14deg)}}
+.spr.buff{animation:buff .5s}@keyframes buff{50%{transform:scale(1.15);filter:drop-shadow(0 0 12px #ffcf4a)}}
+#panel{display:flex;border:3px solid var(--line);border-radius:0 0 10px 10px;background:var(--panel);min-height:130px}
+#msg{flex:1;padding:14px 16px;font-size:26px;line-height:1.15;cursor:pointer;position:relative}
+#msg.wait::after{content:'▼';position:absolute;right:12px;bottom:8px;font-size:14px;color:var(--acc);animation:blink .8s infinite}
+@keyframes blink{50%{opacity:0}}
+#cmd{width:46%;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px;border-left:3px solid var(--line)}
+#cmd:empty{display:none}
+#cmd button{font-size:11px}
+#cmd .mv{text-align:left;border-left:6px solid var(--c);padding:6px 8px;display:flex;flex-direction:column;gap:3px}
+#cmd .mv b{font-weight:normal;font-size:10px}
+#cmd .mv small{font-family:'VT323';font-size:16px;color:var(--dim)}
+#cmd .mv i{font-style:normal;font-family:'VT323';font-size:15px}
+.se{color:var(--good)}.nve{color:#f87171}
+#cmd .back{grid-column:span 2;padding:6px}
+#partyBar{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+#partyBar .pm{background:var(--panel);border:2px solid var(--line);border-radius:6px;padding:4px 8px;display:flex;align-items:center;gap:6px;font-size:16px;min-width:110px}
+#partyBar .pm.act{border-color:var(--acc)}
+#partyBar .pm.ko{opacity:.4}
+#partyBar .pm .av img{width:32px;height:32px}
+#partyBar .bar{height:6px;width:60px;margin:0}
+#bagTag{margin-left:auto;font-size:18px;color:var(--dim);align-self:center}
+/* modal */
+#modal{position:fixed;inset:0;background:#000b;z-index:50;display:flex;align-items:center;justify-content:center;padding:14px;animation:fadein .15s}
+#modalBox{background:var(--panel);border:3px solid var(--line);border-radius:10px;padding:16px;max-width:720px;width:100%;max-height:90vh;overflow:auto}
+.opts{display:grid;gap:8px}
+.opts.c2{grid-template-columns:1fr 1fr}.opts.c3{grid-template-columns:repeat(3,1fr)}
+.opt{text-align:left;font-family:'VT323';font-size:20px;padding:8px 10px}
+.opt small{display:block;color:var(--dim);font-size:17px}
+.opt.cancel{margin-top:10px;width:100%;text-align:center;font-family:'Press Start 2P';font-size:10px}
+.rw{text-align:center}
+.rw .ic{font-size:42px;display:block;margin:6px 0}
+.rw b{font-family:'Press Start 2P';font-size:10px;font-weight:normal;display:block;margin-bottom:6px;color:var(--acc)}
+.mem{display:flex;align-items:center;gap:10px}
+.mem .av{font-size:30px;width:40px;text-align:center}.mem .av img{width:40px;height:40px}
+.mem .bx{flex:1}.mem .bar{margin-top:2px}
+.mem em{font-style:normal;color:var(--acc);font-size:16px}
+.modtxt{font-size:21px;line-height:1.2;margin-bottom:12px;color:#ddd8ea}
+table.tc{border-collapse:collapse;margin:auto;font-size:18px}
+table.tc td,table.tc th{border:1px solid var(--line);padding:3px 5px;text-align:center;min-width:30px}
+table.tc th{font-weight:normal}
+.x2{background:#14532d;color:#86efac}.x05{background:#4c1d1d;color:#fca5a5}
+/* editor */
+.ed-cols{display:grid;grid-template-columns:1.2fr 1fr;gap:12px}
+.pane{background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:14px}
+.fld{margin-bottom:12px}
+.fld label{display:block;font-family:'Press Start 2P';font-size:9px;color:var(--dim);margin-bottom:6px}
+.fld input[type=text]{width:100%}
+.look{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#edPrev{width:80px;height:80px;background:#15141d;border:2px solid var(--line);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:48px;overflow:hidden}
+#edPrev img{width:100%;height:100%;object-fit:cover}
+#edEmoji{width:80px;text-align:center;font-size:26px}
+.filebtn{position:relative;overflow:hidden;display:inline-block}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.stat{display:grid;grid-template-columns:60px 1fr 40px;align-items:center;gap:8px;font-size:19px}
+.stat input{width:100%;accent-color:var(--acc)}
+.mvslots{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.mvslots div{display:flex;flex-direction:column;font-size:16px;color:var(--dim)}
+.mvslots select{width:100%}
+details{background:#1a1924;border:2px dashed var(--line);border-radius:8px;padding:8px;margin-bottom:12px}
+summary{cursor:pointer;font-family:'Press Start 2P';font-size:9px;color:var(--acc)}
+.nm-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.nm-row input,.nm-row select{width:100%}
+.edl{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;max-height:380px;overflow:auto}
+.edl .it{display:flex;align-items:center;gap:8px;background:var(--panel2);border-radius:6px;padding:6px 8px}
+.it .av img{width:40px;height:40px}
+.edl .it .t{flex:1;line-height:1}
+.edl .it button{padding:6px 8px;font-size:8px}
+#edIO{width:100%;height:90px;font-size:15px}
+.note{color:var(--dim);font-size:17px;line-height:1.15}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--acc);color:#1a1720;padding:10px 16px;border-radius:8px;font-family:'Press Start 2P';font-size:10px;z-index:60;transition:opacity .3s;opacity:0;pointer-events:none}
+#toast.show{opacity:1}
+@media (max-width:700px){
+ .ed-cols{grid-template-columns:1fr}
+ #panel{flex-direction:column}
+ #cmd{width:100%;border-left:none;border-top:3px solid var(--line)}
+ #msg{min-height:80px;font-size:22px}
+ .info{width:48%;padding:5px 7px}.info .n{font-size:17px}
+ .opts.c3{grid-template-columns:1fr}
+ #s-title h1{font-size:24px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<section id="s-title" class="screen">
+  <div class="parade"></div>
+  <h1>LEGENDS<br>ROGUE</h1>
+  <div class="sub">An endless roguelite battler starring famous people</div>
+  <div class="tmenu">
+    <button id="tContinue" class="primary hidden">▶ Continue run</button>
+    <button id="tNew" class="primary">New Run</button>
+    <button id="tEditor">★ Create Fighters</button>
+    <button id="tTypes">Type Chart</button>
+    <button id="tHelp">How to play</button>
+  </div>
+  <div id="best"></div>
+</section>
+
+<section id="s-starter" class="screen hidden">
+  <div class="topbar">
+    <button id="stBack">◀ Back</button>
+    <h2>Pick your starters</h2>
+    <div id="stBudget"></div>
+    <button id="stGo" class="primary" disabled>Start ▶</button>
+  </div>
+  <div id="stChosen"></div>
+  <div id="stGrid" class="grid"></div>
+</section>
+
+<section id="s-battle" class="screen hidden">
+  <div id="arena">
+    <div id="waveTag"><span id="waveTxt"></span><button id="spdBtn" title="Text speed">▶▶</button><button id="quitBtn" title="Back to title">✕</button></div>
+    <div class="info" id="eInfo"></div>
+    <div class="mon" id="eMon"><div class="plat"></div><div class="spr" id="eSpr"></div></div>
+    <div class="mon" id="pMon"><div class="plat"></div><div class="spr" id="pSpr"></div></div>
+    <div class="info" id="pInfo"></div>
+  </div>
+  <div id="panel"><div id="msg"></div><div id="cmd"></div></div>
+  <div id="partyBar"></div>
+</section>
+
+<section id="s-editor" class="screen hidden">
+  <div class="topbar">
+    <button id="edBack">◀ Back</button>
+    <h2>Create Fighters</h2>
+  </div>
+  <div class="ed-cols">
+    <div class="pane">
+      <h3 id="edTitle">New fighter</h3>
+      <div class="fld"><label>Name</label><input type="text" id="edName" maxlength="26" placeholder="Type any famous person's name"></div>
+      <div class="fld"><label>Look</label>
+        <div class="look">
+          <div id="edPrev">⭐</div>
+          <div>
+            <div class="note">Emoji:</div>
+            <input type="text" id="edEmoji" value="⭐" maxlength="8">
+          </div>
+          <div>
+            <span class="filebtn"><button type="button">Upload picture</button><input type="file" id="edFile" accept="image/*"></span>
+            <button type="button" id="edNoImg" class="hidden">Remove pic</button>
+          </div>
+        </div>
+      </div>
+      <div class="fld" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div><label>Type 1</label><select id="edT1"></select></div>
+        <div><label>Type 2</label><select id="edT2"></select></div>
+      </div>
+      <div class="fld"><label>Base stats <span id="edBst"></span></label>
+        <div id="edStats"></div>
+      </div>
+      <div class="fld"><label>Moves (learned at these levels)</label>
+        <div class="mvslots" id="edMoves"></div>
+        <div class="btnrow"><button type="button" id="edAuto">Auto-fill from types</button></div>
+      </div>
+      <details>
+        <summary>+ Invent a custom move</summary>
+        <div class="nm-row">
+          <input type="text" id="nmName" placeholder="Move name" maxlength="22">
+          <select id="nmType"></select>
+          <label class="note">Power (0 = status) <input type="number" id="nmPow" value="70" min="0" max="150"></label>
+          <label class="note">Accuracy % <input type="number" id="nmAcc" value="95" min="30" max="100"></label>
+          <select id="nmFx"></select>
+          <button type="button" id="nmAdd">Add move</button>
+        </div>
+        <div id="nmList" class="note" style="margin-top:8px"></div>
+      </details>
+      <div class="btnrow">
+        <button type="button" id="edSave" class="primary">Save fighter</button>
+        <button type="button" id="edReset">Clear form</button>
+      </div>
+    </div>
+    <div class="pane">
+      <h3>Your fighters</h3>
+      <div id="edList" class="edl"></div>
+      <label class="note" style="display:flex;gap:8px;align-items:center;margin-bottom:14px"><input type="checkbox" id="useDef"> Include the built-in historical roster in runs</label>
+      <h3>Built-in fighters</h3>
+      <div class="note" style="margin-bottom:8px">Edit any of these to change their name, look, types, stats or moves. Reset puts them back.</div>
+      <div id="edBuiltin" class="edl"></div>
+      <h3>Backup / share</h3>
+      <div class="note">Export your fighters (and edits to built-ins) as text to keep a backup or send to a friend. Paste text here and hit Import to load fighters.</div>
+      <textarea id="edIO" placeholder="Exported fighters appear here…"></textarea>
+      <div class="btnrow">
+        <button type="button" id="edExport">Export</button>
+        <button type="button" id="edCopy">Copy</button>
+        <button type="button" id="edImport">Import</button>
+      </div>
+    </div>
+  </div>
+</section>
+</div>
+
+<div id="modal" class="hidden"><div id="modalBox"></div></div>
+<div id="toast"></div>
+
+<script src="game.js"></script>
+</body>
+</html>
