@@ -413,33 +413,34 @@ const fInt=(d,k)=>d&&d.fields&&d.fields[k]?+(d.fields[k].integerValue||0):0, fSt
 function updGachaBtn(){const g=gacha();$('#tGacha').textContent=`🥚 Tirage · 🎟️ ${g.tickets}`+(g.eggs.length?` · 🥚${g.eggs.length}`:'')}
 let lastGift=0;
 async function claimGifts(){if(!ACC||Date.now()-lastGift<20000)return;lastGift=Date.now();let got=0;const msgs=[];
- try{const d=await fsGet('gifts/'+ACC.uid);const n=fInt(d,'tickets');if(n>0){await fsDel('gifts/'+ACC.uid);got+=n;if(fStr(d,'msg'))msgs.push(fStr(d,'msg'))}}catch(e){console.warn('gifts',e)}
+ try{const d=await fsGet('gifts/'+ACC.uid);const n=fInt(d,'tickets');if(n!==0){await fsDel('gifts/'+ACC.uid);got+=n;if(fStr(d,'msg'))msgs.push(fStr(d,'msg'))}}catch(e){console.warn('gifts',e)}
  let ev=[];try{const d=await fsGet('game/events');ev=d?JSON.parse(fStr(d,'data')||'[]'):[]}catch(e){console.warn('events',e)}
  const g=gacha();for(const e of ev)if(e&&e.id&&!g.claimed.includes(e.id)){g.claimed.push(e.id);got+=+e.tickets||0;if(e.msg)msgs.push(e.msg)}
- if(!got&&g.claimed.length===gacha().claimed.length)return;g.claimed=g.claimed.slice(-200);g.tickets+=got;setGacha(g);if(!got)return;
+ if(!got&&g.claimed.length===gacha().claimed.length)return;g.claimed=g.claimed.slice(-200);g.tickets=Math.max(0,g.tickets+got);setGacha(g);if(!got)return;
  if(!$('#s-title').classList.contains('hidden'))updGachaBtn();
- const body=`<div class="hatch"><div style="font-size:64px">🎁</div><div class="nm">+${got} ticket${got>1?'s':''} 🎟️</div>${msgs.map(m=>`<div class="modtxt">« ${esc(m)} »</div>`).join('')}</div>`;
- if($('#modal').classList.contains('hidden'))choose('Cadeau de l’admin !',[],{body,cancel:'Merci !'});else toast(`🎁 +${got} tickets offerts par l’admin !`)}
+ const abs=Math.abs(got),body=`<div class="hatch"><div style="font-size:64px">${got>0?'🎁':'📉'}</div><div class="nm">${got>0?'+':'−'}${abs} ticket${abs>1?'s':''} 🎟️</div>${got<0?'<div class="modtxt">L’admin t’a retiré des tickets.</div>':''}${msgs.map(m=>`<div class="modtxt">« ${esc(m)} »</div>`).join('')}</div>`;
+ if($('#modal').classList.contains('hidden'))choose(got>0?'Cadeau de l’admin !':'Message de l’admin',[],{body,cancel:got>0?'Merci !':'OK'});else toast(got>0?`🎁 +${got} tickets offerts par l’admin !`:`📉 L’admin t’a retiré ${abs} tickets`)}
 function admErr(e){const m=String(e&&e.message||e);return m.startsWith('PERMISSION_DENIED')?'Refusé : mets à jour les règles Firestore (voir les instructions)':errMsg(e)}
+const admN=sel=>clamp(Math.round(+$(sel).value||0),-9999,9999);
 async function adminPanel(){if(!isAdmin())return;const box=$('#modalBox');
  box.innerHTML=`<h3>🛠️ Panneau admin</h3>
- <div class="adm"><h4>Mes tickets : <span id="admMine">${gacha().tickets}</span> 🎟️</h4><div class="arow">${[1,5,10,50].map(n=>`<button data-me="${n}">+${n}</button>`).join('')}</div></div>
- <div class="adm"><h4>🎁 Donner à TOUS les joueurs</h4><div class="arow"><input type="number" id="admAllN" value="5" min="1" max="999"><span>tickets</span><input type="text" id="admAllMsg" maxlength="80" placeholder="Message (facultatif)"><button class="primary" id="admAll">Envoyer</button></div>
-  <div class="note" style="margin-top:6px">Chaque joueur le reçoit une seule fois, à sa prochaine visite du menu (les nouveaux joueurs aussi).</div></div>
- <div class="adm"><h4>👥 Donner à un joueur</h4><div class="arow" style="margin-bottom:6px"><input type="text" id="admMsg" maxlength="80" placeholder="Message pour le joueur (facultatif)"></div><div id="admList" class="note">Chargement des joueurs…</div></div>`;
+ <div class="adm"><h4>Mes tickets : <span id="admMine">${gacha().tickets}</span> 🎟️</h4><div class="arow"><input type="number" id="admMeN" value="10" step="1"><button class="primary" id="admMe">Appliquer</button><span class="note">(négatif = retirer)</span></div></div>
+ <div class="adm"><h4>🎁 Donner / retirer à TOUS les joueurs</h4><div class="arow"><input type="number" id="admAllN" value="5" step="1"><span>tickets</span><input type="text" id="admAllMsg" maxlength="80" placeholder="Message (facultatif)"><button class="primary" id="admAll">Envoyer</button></div>
+  <div class="note" style="margin-top:6px">Un nombre négatif retire des tickets (jamais en dessous de 0). Chaque joueur le reçoit une seule fois, à sa prochaine visite du menu (les nouveaux joueurs aussi).</div></div>
+ <div class="adm"><h4>👥 Donner / retirer à un joueur</h4><div class="arow" style="margin-bottom:6px"><input type="text" id="admMsg" maxlength="80" placeholder="Message pour le joueur (facultatif)"></div><div id="admList" class="note">Chargement des joueurs…</div></div>`;
  const c=document.createElement('button');c.className='opt cancel';c.textContent='Fermer';c.onclick=()=>{$('#modal').classList.add('hidden');title()};box.appendChild(c);
  $('#modal').classList.remove('hidden');
- box.querySelectorAll('[data-me]').forEach(b=>b.onclick=()=>{const g=gacha();g.tickets+=+b.dataset.me;setGacha(g);$('#admMine').textContent=g.tickets;toast(`+${b.dataset.me} tickets pour toi !`)});
- $('#admAll').onclick=async()=>{const n=clamp(Math.round(+$('#admAllN').value||0),1,999),msg=$('#admAllMsg').value.trim();$('#admAll').disabled=true;
+ $('#admMe').onclick=()=>{const n=admN('#admMeN');if(!n)return toast('Écris un nombre (pas 0)');const g=gacha();g.tickets=Math.max(0,g.tickets+n);setGacha(g);$('#admMine').textContent=g.tickets;toast(n>0?`+${n} tickets pour toi !`:`${n} tickets pour toi`)};
+ $('#admAll').onclick=async()=>{const n=admN('#admAllN'),msg=$('#admAllMsg').value.trim();if(!n)return toast('Écris un nombre (pas 0)');$('#admAll').disabled=true;
   try{const d=await fsGet('game/events');const ev=d?JSON.parse(fStr(d,'data')||'[]'):[];ev.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),tickets:n,msg,at:new Date().toISOString()});
-   await fsPatch('game/events',{data:{stringValue:JSON.stringify(ev.slice(-50))}});toast(`🎁 ${n} tickets envoyés à tous les joueurs !`);$('#admAllMsg').value=''}
+   await fsPatch('game/events',{data:{stringValue:JSON.stringify(ev.slice(-50))}});toast(n>0?`🎁 ${n} tickets envoyés à tous les joueurs !`:`📉 ${-n} tickets retirés à tous les joueurs`);$('#admAllMsg').value=''}
   catch(e){toast(admErr(e))}$('#admAll').disabled=false};
  try{const d=await fsGet('players?pageSize=300');const docs=(d&&d.documents)||[];
   const rows=docs.map(doc=>{const uid=doc.name.split('/').pop();let t='?',best=0;try{const data=JSON.parse(fStr(doc,'data')||'{}');const g=JSON.parse(data.lr_gacha||'null');t=g?g.tickets:3;best=JSON.parse(data.lr_best||'0')}catch(e){}
    return{uid,name:fStr(doc,'name')||'(sans pseudo)',email:fStr(doc,'email'),t,best}}).sort((a,b)=>a.name.localeCompare(b.name));
-  $('#admList').innerHTML=rows.length?`<div class="note" style="margin-bottom:4px">${rows.length} joueur${rows.length>1?'s':''}</div>`+rows.map(r=>`<div class="prow"><div class="t">${esc(r.name)}${r.uid===ACC.uid?' (toi)':''}<br><small>${esc(r.email)} · 🎟️ ${r.t} · record vague ${r.best||0}</small></div><input type="number" value="5" min="1" max="999" data-n="${esc(r.uid)}"><button data-give="${esc(r.uid)}" data-nm="${esc(r.name)}">Donner</button></div>`).join(''):'Aucun joueur pour l’instant.';
-  $('#admList').querySelectorAll('[data-give]').forEach(b=>b.onclick=async()=>{const uid=b.dataset.give,n=clamp(Math.round(+$(`[data-n="${uid}"]`).value||0),1,999);b.disabled=true;
-   try{const cur=fInt(await fsGet('gifts/'+uid),'tickets');await fsPatch('gifts/'+uid,{tickets:{integerValue:String(cur+n)},msg:{stringValue:$('#admMsg').value.trim()}});toast(`🎁 ${n} tickets envoyés à ${b.dataset.nm} !`)}
+  $('#admList').innerHTML=rows.length?`<div class="note" style="margin-bottom:4px">${rows.length} joueur${rows.length>1?'s':''}</div>`+rows.map(r=>`<div class="prow"><div class="t">${esc(r.name)}${r.uid===ACC.uid?' (toi)':''}<br><small>${esc(r.email)} · 🎟️ ${r.t} · record vague ${r.best||0}</small></div><input type="number" value="5" step="1" data-n="${esc(r.uid)}"><button data-give="${esc(r.uid)}" data-nm="${esc(r.name)}">Appliquer</button></div>`).join(''):'Aucun joueur pour l’instant.';
+  $('#admList').querySelectorAll('[data-give]').forEach(b=>b.onclick=async()=>{const uid=b.dataset.give,n=admN(`[data-n="${uid}"]`);if(!n)return toast('Écris un nombre (pas 0)');b.disabled=true;
+   try{const cur=fInt(await fsGet('gifts/'+uid),'tickets');await fsPatch('gifts/'+uid,{tickets:{integerValue:String(cur+n)},msg:{stringValue:$('#admMsg').value.trim()}});toast(n>0?`🎁 ${n} tickets envoyés à ${b.dataset.nm} !`:`📉 ${-n} tickets retirés à ${b.dataset.nm}`)}
    catch(e){toast(admErr(e))}b.disabled=false})}
  catch(e){$('#admList').textContent=admErr(e)}}
 function typeChart(){const h=TYPES.map(t=>{const weak=TYPES.filter(d=>STRONG[d].includes(t));
