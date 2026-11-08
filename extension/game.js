@@ -414,7 +414,7 @@ function openGacha(res){const g=gacha(),box=$('#modalBox');
   <div class="gside"><div class="tix">🎟️ ${g.tickets} ticket${g.tickets>1?'s':''}</div>
    <div class="rates">Chances : ⚪ Commun 70 % · 🔵 Rare 22 % · 🟣 Épique 6,1 % · 🟡 Légendaire 1,5 % · ⚫ Secret 0,4 % (1 sur 250)<br>🟡 Légendaire garanti dans ${PITY-g.pity} tirage${PITY-g.pity>1?'s':''} maximum.<br>×10 : au moins un œuf 🔵 Rare ou mieux.</div>
    <div class="btnrow"><button class="primary" id="pull1" ${g.tickets<1?'disabled':''}>Tirer ×1 · 🎟️1</button><button id="pull10" ${g.tickets<10?'disabled':''}>Tirer ×10 · 🎟️10</button></div>
-   <div id="pullRes">${res?res.slice().sort((x,y)=>TIERS.indexOf(x)-TIERS.indexOf(y)).map((t,i)=>eggHTML(t,'pop',`animation-delay:${i*.08}s`)).join('')+`<div class="lbl" style="color:${RAR[best].c}">${res.length>1?'Meilleur œuf':'Œuf'} : ${EGG[best].n}${best==='secret'?' !!!!! ⚫⚫⚫':best==='legendary'?' !!! ✨':' !'}</div>`:''}</div></div></div>
+   <div id="pullRes">${res?res.slice().sort((x,y)=>TIERS.indexOf(x)-TIERS.indexOf(y)).map((t,i)=>eggHTML(t,'pop',`animation-delay:${i*.08}s`)).join(''):''}</div></div></div>
  <div class="note" style="margin-top:14px">Les œufs tirés vont dans <b>🥚 Mes œufs</b> (${g.eggs.length} en incubation). Gagne 🎟️ 1 ticket par boss vaincu.</div>
  <div class="btnrow"><button id="toEggs">🥚 Voir mes œufs</button></div>`;
  const c=document.createElement('button');c.className='opt cancel';c.textContent='Fermer';c.onclick=()=>{$('#modal').classList.add('hidden');if(!$('#s-title').classList.contains('hidden'))title()};box.appendChild(c);
@@ -483,7 +483,8 @@ function admErr(e){const m=String(e&&e.message||e);return m.startsWith('PERMISSI
 const admN=sel=>clamp(Math.round(+$(sel).value||0),-9999,9999);
 async function adminPanel(){if(!isAdmin())return;const box=$('#modalBox');
  box.innerHTML=`<h3>🛠️ Admin · 🎁 Tickets et cadeaux</h3>
- <div class="adm"><h4>Mes tickets : <span id="admMine">${gacha().tickets}</span> 🎟️</h4><div class="arow"><input type="number" id="admMeN" value="10" step="1"><button class="primary" id="admMe">Appliquer</button><span class="note">(négatif = retirer)</span></div></div>
+ <div class="adm"><h4>Mes tickets : <span id="admMine">${gacha().tickets}</span> 🎟️</h4><div class="arow"><input type="number" id="admMeN" value="10" step="1"><button class="primary" id="admMe">Appliquer</button><span class="note">(négatif = retirer)</span></div>
+  <div class="arow" style="margin-top:8px"><button id="admEggs">🗑️ Vider mes œufs (${gacha().eggs.length})</button></div></div>
  <div class="adm"><h4>🎁 Donner / retirer à TOUS les joueurs</h4><div class="arow"><input type="number" id="admAllN" value="5" step="1"><span>tickets</span><input type="text" id="admAllMsg" maxlength="80" placeholder="Message (facultatif)"><button class="primary" id="admAll">Envoyer</button></div>
   <div class="note" style="margin-top:6px">Un nombre négatif retire des tickets (jamais en dessous de 0). Chaque joueur le reçoit une seule fois, à sa prochaine visite du menu (les nouveaux joueurs aussi).</div></div>
  <div class="adm"><h4>🎭 Donner un combattant</h4><div class="arow"><select id="admSp" style="flex:1;min-width:160px">${dexList().map((sp,i)=>`<option value="${esc(sp.id)}">#${String(i+1).padStart(2,'0')} ${esc(sp.name)} · ${RAR[rarOf(sp)].n}</option>`).join('')}</select><button id="admSpMe">À moi</button><button class="primary" id="admSpAll">À tous</button></div>
@@ -495,6 +496,9 @@ async function adminPanel(){if(!isAdmin())return;const box=$('#modalBox');
  $('#admSpAll').onclick=async()=>{const sid=$('#admSp').value,b=$('#admSpAll');b.disabled=true;
   try{const d=await fsGet('game/events');const ev=d?JSON.parse(fStr(d,'data')||'[]'):[];ev.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),tickets:0,unlocks:[sid],msg:$('#admAllMsg').value.trim(),at:new Date().toISOString()});
    await fsPatch('game/events',{data:{stringValue:JSON.stringify(ev.slice(-50))}});toast(`🎭 ${SPECIES[sid].name} envoyé à tous les joueurs !`)}catch(e){toast(admErr(e))}b.disabled=false};
+ $('#admEggs').onclick=async()=>{const n=gacha().eggs.length;if(!n)return toast('Tu n’as aucun œuf');
+  const ok=await choose(`Supprimer tes ${n} œuf${n>1?'s':''} ? C’est définitif.`,[{value:1,label:'Oui, vider'},{value:0,label:'Annuler'}],{cols:2});
+  if(ok){const g=gacha();g.eggs=[];setGacha(g);toast('🗑️ Tous tes œufs ont été supprimés')}adminPanel()};
  $('#admMe').onclick=()=>{const n=admN('#admMeN');if(!n)return toast('Écris un nombre (pas 0)');const g=gacha();g.tickets=Math.max(0,g.tickets+n);setGacha(g);$('#admMine').textContent=g.tickets;toast(n>0?`+${n} tickets pour toi !`:`${n} tickets pour toi`)};
  $('#admAll').onclick=async()=>{const n=admN('#admAllN'),msg=$('#admAllMsg').value.trim();if(!n)return toast('Écris un nombre (pas 0)');$('#admAll').disabled=true;
   try{const d=await fsGet('game/events');const ev=d?JSON.parse(fStr(d,'data')||'[]'):[];ev.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),tickets:n,msg,at:new Date().toISOString()});
