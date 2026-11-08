@@ -310,7 +310,7 @@ button.link{background:none;border:none;color:var(--dim);font-family:'VT323',mon
 <section id="s-editor" class="screen hidden">
   <div class="topbar">
     <button id="edBack">◀ Retour</button>
-    <h2>Créer des combattants</h2>
+    <h2>🛠️ Admin · Créer des combattants</h2>
   </div>
   <div class="ed-cols">
     <div class="pane">
@@ -566,7 +566,7 @@ function save(){if(G)LS.set('lr_run',G)}
 
 // ---------- screens ----------
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));$('#'+id).classList.remove('hidden');window.scrollTo(0,0)}
-function title(){show('s-title');$('#tAdmin').classList.toggle('hidden',!isAdmin());if(ACC)claimGifts();{const g=gacha(),rd=g.eggs.filter(e=>e.left<=0).length;updGachaBtn();if(rd&&ACC)setTimeout(()=>{if(!$('#s-title').classList.contains('hidden')&&$('#modal').classList.contains('hidden'))hatchReady()},600)}$('#tEditor').classList.toggle('hidden',!isAdmin());$('#acct').innerHTML=ACC?`👤 ${esc(ACC.name||ACC.email)} <button id="acctBtn">Mon compte</button>`:'';if(ACC)$('#acctBtn').onclick=accountMenu;$('#s-title .parade').innerHTML=['einstein','joan','mozart','cleopatra','tesla'].map(id=>av(SPECIES[id])).join('');const best=LS.get('lr_best',0);$('#best').textContent=best?`Meilleure partie : vague ${best}`:'';
+function title(){show('s-title');$('#tAdmin').classList.toggle('hidden',!isAdmin());if(ACC)claimGifts();{const g=gacha(),rd=g.eggs.filter(e=>e.left<=0).length;updGachaBtn();if(rd&&ACC)setTimeout(()=>{if(!$('#s-title').classList.contains('hidden')&&$('#modal').classList.contains('hidden'))hatchReady()},600)}$('#tEditor').classList.add('hidden');$('#acct').innerHTML=ACC?`👤 ${esc(ACC.name||ACC.email)} <button id="acctBtn">Mon compte</button>`:'';if(ACC)$('#acctBtn').onclick=accountMenu;$('#s-title .parade').innerHTML=['einstein','joan','mozart','cleopatra','tesla'].map(id=>av(SPECIES[id])).join('');const best=LS.get('lr_best',0);$('#best').textContent=best?`Meilleure partie : vague ${best}`:'';
  $('#tContinue').classList.toggle('hidden',!LS.get('lr_run',null))}
 
 // ---------- modal ----------
@@ -841,7 +841,7 @@ async function claimGifts(){if(!ACC||Date.now()-lastGift<20000)return;lastGift=D
 function admErr(e){const m=String(e&&e.message||e);return m.startsWith('PERMISSION_DENIED')?'Refusé : mets à jour les règles Firestore (voir les instructions)':errMsg(e)}
 const admN=sel=>clamp(Math.round(+$(sel).value||0),-9999,9999);
 async function adminPanel(){if(!isAdmin())return;const box=$('#modalBox');
- box.innerHTML=`<h3>🛠️ Panneau admin</h3>
+ box.innerHTML=`<h3>🛠️ Admin · 🎁 Tickets et cadeaux</h3>
  <div class="adm"><h4>Mes tickets : <span id="admMine">${gacha().tickets}</span> 🎟️</h4><div class="arow"><input type="number" id="admMeN" value="10" step="1"><button class="primary" id="admMe">Appliquer</button><span class="note">(négatif = retirer)</span></div></div>
  <div class="adm"><h4>🎁 Donner / retirer à TOUS les joueurs</h4><div class="arow"><input type="number" id="admAllN" value="5" step="1"><span>tickets</span><input type="text" id="admAllMsg" maxlength="80" placeholder="Message (facultatif)"><button class="primary" id="admAll">Envoyer</button></div>
   <div class="note" style="margin-top:6px">Un nombre négatif retire des tickets (jamais en dessous de 0). Chaque joueur le reçoit une seule fois, à sa prochaine visite du menu (les nouveaux joueurs aussi).</div></div>
@@ -926,7 +926,11 @@ function loadImg(file){return new Promise((res,rej)=>{const r=new FileReader();r
 
 // ---------- wiring ----------
 $('#tNew').onclick=()=>{if(LS.get('lr_run',null)){choose('Commencer une nouvelle partie ? Ta partie sauvegardée sera perdue.',[{value:1,label:'Oui, nouvelle partie'},{value:0,label:'Annuler'}],{cols:2}).then(v=>{if(v){LS.del('lr_run');starterScreen()}})}else starterScreen()};
-$('#tContinue').onclick=continueRun;$('#eggBtn').onclick=()=>{if(busy)return toast('Attends la fin du tour');openEggs()};$('#gachaBtn').onclick=()=>{if(busy)return toast('Attends la fin du tour');openGacha()};$('#tEggs').onclick=()=>openEggs();$('#tAdmin').onclick=()=>adminPanel();$('#tGacha').onclick=()=>openGacha();$('#tEditor').onclick=editorScreen;$('#tTypes').onclick=typeChart;$('#tHelp').onclick=help;
+$('#tContinue').onclick=continueRun;$('#eggBtn').onclick=()=>{if(busy)return toast('Attends la fin du tour');openEggs()};$('#gachaBtn').onclick=()=>{if(busy)return toast('Attends la fin du tour');openGacha()};$('#tEggs').onclick=()=>openEggs();$('#tAdmin').onclick=()=>adminMenu();
+async function adminMenu(){if(!isAdmin())return;const v=await choose('🛠️ Admin',[
+ {value:'ed',html:'★ Créer des combattants<small>Ajouter, modifier ou supprimer des combattants, raretés, photos, attaques…</small>'},
+ {value:'gift',html:'🎁 Tickets et cadeaux<small>Donner ou retirer des tickets, donner des combattants (à toi, à un joueur ou à tous)</small>'}],{cancel:'Retour'});
+ if(v==='ed')editorScreen();else if(v==='gift')adminPanel()}$('#tGacha').onclick=()=>openGacha();$('#tEditor').onclick=editorScreen;$('#tTypes').onclick=typeChart;$('#tHelp').onclick=help;
 $('#stBack').onclick=title;$('#stGo').onclick=startRun;$('#edBack').onclick=title;
 $('#spdBtn').onclick=()=>{settings.fast=!settings.fast;LS.set('lr_settings',settings);$('#spdBtn').style.color=settings.fast?'var(--acc)':'';toast(settings.fast?'Texte rapide':'Texte normal')};
 $('#quitBtn').onclick=async()=>{const v=await choose('Quitter la partie ? Elle est sauvegardée au début de chaque vague.',[{value:1,label:'Retour au menu'},{value:0,label:'Continuer'}],{cols:2});if(v){G=null;busy=false;title()}};
