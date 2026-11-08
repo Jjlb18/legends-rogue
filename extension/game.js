@@ -6,9 +6,10 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
- set(k,v){try{localStorage.setItem(k,JSON.stringify(v));if(SYNC_KEYS.includes(k))queueSync();return true}catch(e){return false}},
- del(k){try{localStorage.removeItem(k);if(SYNC_KEYS.includes(k))queueSync()}catch(e){}}};
-const SYNC_KEYS=['lr_run','lr_best','lr_species','lr_moves','lr_overrides','lr_settings'];
+ set(k,v){try{localStorage.setItem(k,JSON.stringify(v));if(SYNC_KEYS.includes(k))queueSync();else if(ROSTER_KEYS.includes(k))queueRoster();return true}catch(e){return false}},
+ del(k){try{localStorage.removeItem(k);if(SYNC_KEYS.includes(k))queueSync();else if(ROSTER_KEYS.includes(k))queueRoster()}catch(e){}}};
+const SYNC_KEYS=['lr_run','lr_best','lr_settings'];
+const ROSTER_KEYS=['lr_species','lr_moves','lr_overrides','lr_rosteropts'];
 let ACC=null;
 function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('show'),1800)}
 
@@ -86,10 +87,11 @@ function applyOv(id){const s=overrides[id]?Object.assign({},overrides[id],{id}):
 Object.keys(overrides).forEach(id=>{if(ORIG[id])applyOv(id);else delete overrides[id]});
 let customs=LS.get('lr_species',[]);customs.forEach(s=>SPECIES[s.id]=s);
 let settings=Object.assign({useDefaults:true,fast:false},LS.get('lr_settings',{}));
+let rosterOpts=Object.assign({useDefaults:true},LS.get('lr_rosteropts',{}));
 const SPEED=()=>settings.fast?.45:1;
 const bst=s=>s.base.hp+s.base.atk+s.base.def+s.base.spd;
 const costOf=s=>clamp(Math.round((bst(s)-180)/30),1,6);
-function allSpecies(){const l=(settings.useDefaults?DEFAULTS:[]).concat(customs);return l.length?l:DEFAULTS}
+function allSpecies(){const l=(rosterOpts.useDefaults?DEFAULTS:[]).concat(customs);return l.length?l:DEFAULTS}
 // ---------- pixel sprites ----------
 const PX=32,PXC=new Map();
 function finishPx(src){const c=document.createElement('canvas');c.width=c.height=PX;const x=c.getContext('2d');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(src,2,2,PX-4,PX-4);
@@ -111,7 +113,7 @@ function imgPx(url){return new Promise((res,rej)=>{const im=new Image();im.onloa
   if(inside(cx-1,cy)||inside(cx+1,cy)||inside(cx,cy-1)||inside(cx,cy+1)){x.fillStyle='#1a1426';x.fillRect(cx*B,cy*B,B,B)}}
  for(let cy=0;cy<PX;cy++)for(let cx=0;cx<PX;cx++){if(!inside(cx,cy))continue;
   if(!inside(cx-1,cy)||!inside(cx,cy-1)){x.fillStyle='#ffffff55';x.fillRect(cx*B,cy*B,B,B)}else if(!inside(cx+1,cy)||!inside(cx,cy+1)){x.fillStyle='#00000040';x.fillRect(cx*B,cy*B,B,B)}}
- res(c.toDataURL('image/png'))};im.onerror=rej;im.src=url})}
+ const w=c.toDataURL('image/webp',.85);res(w.startsWith('data:image/webp')?w:c.toDataURL('image/png'))};im.onerror=rej;im.src=url})}
 function pix(s){if(s&&s.img)return s.img;const e=(s&&s.emoji)||'⭐';if(!PXC.has(e))PXC.set(e,emojiPx(e));return PXC.get(e)}
 const av=s=>`<img class="${s&&s.img&&s.pv===2?'ph':'px'}" src="${pix(s||{emoji:'❔'})}" alt="">`;
 
@@ -143,7 +145,7 @@ function save(){if(G)LS.set('lr_run',G)}
 
 // ---------- screens ----------
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));$('#'+id).classList.remove('hidden');window.scrollTo(0,0)}
-function title(){show('s-title');$('#acct').innerHTML=ACC?`👤 ${esc(ACC.name||ACC.email)} <button id="acctBtn">Mon compte</button>`:'';if(ACC)$('#acctBtn').onclick=accountMenu;$('#s-title .parade').innerHTML=['einstein','joan','mozart','cleopatra','tesla'].map(id=>av(SPECIES[id])).join('');const best=LS.get('lr_best',0);$('#best').textContent=best?`Meilleure partie : vague ${best}`:'';
+function title(){show('s-title');$('#tEditor').classList.toggle('hidden',!isAdmin());$('#acct').innerHTML=ACC?`👤 ${esc(ACC.name||ACC.email)} <button id="acctBtn">Mon compte</button>`:'';if(ACC)$('#acctBtn').onclick=accountMenu;$('#s-title .parade').innerHTML=['einstein','joan','mozart','cleopatra','tesla'].map(id=>av(SPECIES[id])).join('');const best=LS.get('lr_best',0);$('#best').textContent=best?`Meilleure partie : vague ${best}`:'';
  $('#tContinue').classList.toggle('hidden',!LS.get('lr_run',null))}
 
 // ---------- modal ----------
@@ -165,7 +167,7 @@ function renderStarters(){const used=picks.reduce((a,id)=>a+costOf(SPECIES[id]),
  $('#stBudget').innerHTML=`Points ${used}/${BUDGET}<span class="pips">${Array.from({length:BUDGET},(_,i)=>`<span class="pip ${i<used?'on':''}"></span>`).join('')}</span>`;
  $('#stChosen').innerHTML=picks.length?picks.map(id=>`<div class="mini"><span class="av">${av(SPECIES[id])}</span>${esc(SPECIES[id].name)}</div>`).join(''):'<span class="empty">Touche les combattants ci-dessous pour les ajouter à ton équipe (6 max). Les plus forts coûtent plus de points.</span>';
  $('#stGo').disabled=!picks.length;
- const list=[...customs,...(settings.useDefaults||!customs.length?DEFAULTS:[])];
+ const list=[...customs,...(rosterOpts.useDefaults||!customs.length?DEFAULTS:[])];
  $('#stGrid').innerHTML=list.map(s=>{const sel=picks.includes(s.id),c=costOf(s),can=sel||(used+c<=BUDGET&&picks.length<6);
   return `<div class="card ${sel?'sel':''} ${can?'':'no'}" data-id="${esc(s.id)}">${customs.includes(s)?'<span class="star">★</span>':''}<span class="cost">${c}</span><div class="av">${av(s)}</div><div class="nm">${esc(s.name)}</div><div>${s.types.map(tb).join('')}</div></div>`}).join('');
  $('#stGrid').querySelectorAll('.card').forEach(el=>el.onclick=()=>{const id=el.dataset.id;const i=picks.indexOf(id);
@@ -339,7 +341,7 @@ function help(){choose('Comment jouer',[],{cancel:'Compris !',body:`<div class="
 • Profite des types (voir la Table des types) pour frapper fort.<br>
 • Tes combattants apprennent de nouvelles attaques en montant de niveau.<br>
 • Un combattant K.O. le reste jusqu’à ce que tu utilises un Rappel. Si tout le monde est K.O., la partie est finie. Jusqu’où iras-tu ?<br><br>
-<b>★ Créer des combattants</b> te permet d’ajouter qui tu veux : écris un nom, choisis un emoji ou ajoute une photo, puis règle ses types, stats et attaques.</div>`})}
+De nouveaux combattants sont ajoutés régulièrement par le créateur du jeu !</div>`})}
 
 // ---------- editor ----------
 let ed={id:null,img:null,px:false,pv:0};
@@ -367,7 +369,7 @@ function edList(){$('#edList').innerHTML=customs.length?customs.map(s=>`<div cla
  $('#edList').querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{const s=SPECIES[b.dataset.d];const ok=await choose(`Supprimer ${esc(s.name)} ?`,[{value:1,label:'Oui, supprimer'},{value:0,label:'Garder'}],{cols:2});
   if(!ok)return;customs=customs.filter(x=>x.id!==s.id);delete SPECIES[s.id];LS.set('lr_species',customs);if(ed.id===s.id)edLoad(null);edList()});
  $('#nmList').innerHTML=customMoves.length?'Tes attaques : '+customMoves.map(m=>esc(m.name)).join(', '):''}
-function editorScreen(){show('s-editor');$('#useDef').checked=settings.useDefaults;edLoad(null);edList()}
+function editorScreen(){if(!isAdmin())return;show('s-editor');$('#useDef').checked=rosterOpts.useDefaults;edLoad(null);edList()}
 function edSave(){const name=$('#edName').value.trim();if(!name)return toast('Donne un nom à ton combattant');
  const t1=$('#edT1').value,t2=$('#edT2').value;const types=t2&&t2!==t1?[t1,t2]:[t1];
  const moves=LEARN_AT.map((_,i)=>$('#em_'+i).value);if(!moves.some(Boolean))return toast('Choisis au moins une attaque');
@@ -392,7 +394,7 @@ $('#edEmoji').oninput=edPrev;
 $('#edFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{ed.img=await loadImg(f);ed.px=true;ed.pv=2;edPrev()}catch(x){toast('Impossible de lire cette image')}e.target.value=''};
 $('#edNoImg').onclick=()=>{ed.img=null;edPrev()};
 $('#edSave').onclick=edSave;$('#edReset').onclick=()=>edLoad(null);
-$('#useDef').onchange=e=>{settings.useDefaults=e.target.checked;LS.set('lr_settings',settings)};
+$('#useDef').onchange=e=>{rosterOpts.useDefaults=e.target.checked;LS.set('lr_rosteropts',rosterOpts)};
 $('#nmAdd').onclick=()=>{const name=$('#nmName').value.trim();if(!name)return toast('Donne un nom à l’attaque');
  const m={id:'cm_'+Date.now().toString(36),name,type:$('#nmType').value,pow:clamp(+$('#nmPow').value||0,0,150),acc:clamp(+$('#nmAcc').value||100,30,100),fx:$('#nmFx').value};
  if(!m.pow&&!m.fx)m.fx='atkup';customMoves.push(m);MOVES[m.id]=m;LS.set('lr_moves',customMoves);
@@ -439,11 +441,34 @@ function reloadState(){customMoves.forEach(m=>delete MOVES[m.id]);customMoves=LS
  customs.forEach(s=>delete SPECIES[s.id]);customs=LS.get('lr_species',[]);customs.forEach(s=>SPECIES[s.id]=s);
  Object.keys(ORIG).forEach(id=>{SPECIES[id]=ORIG[id];DEFAULTS[DEFAULTS.findIndex(x=>x.id===id)]=ORIG[id]});
  overrides=LS.get('lr_overrides',{});Object.keys(overrides).forEach(id=>{if(ORIG[id])applyOv(id);else delete overrides[id]});
- settings=Object.assign({useDefaults:true,fast:false},LS.get('lr_settings',{}))}
+ settings=Object.assign({useDefaults:true,fast:false},LS.get('lr_settings',{}));rosterOpts=Object.assign({useDefaults:true},LS.get('lr_rosteropts',{}))}
 async function pullCloud(){const c=await cloudLoad();
  if(c){SYNC_KEYS.forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});for(const k in c.data)if(SYNC_KEYS.includes(k))try{localStorage.setItem(k,c.data[k])}catch(e){}if(c.name&&!ACC.name)ACC.name=c.name}
  else await cloudSave();
+ await pullRoster(c&&c.data);
  reloadState();saveSession();CLOUD('☁️ Sauvegardé')}
+// ---------- shared roster: only the admin can change it ----------
+const ADMIN_EMAILS=['joshualieberthal0@gmail.com'];
+const isAdmin=()=>!!ACC&&ADMIN_EMAILS.includes(String(ACC.email||'').toLowerCase());
+function tokClaims(){try{return JSON.parse(atob(ACC.idToken.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))}catch(e){return{}}}
+const rosterURL=()=>`https://firestore.googleapis.com/v1/projects/${FIREBASE.projectId||jwtAud(ACC.idToken)}/databases/(default)/documents/game/roster`;
+async function rosterLoad(){const r=await fetch(rosterURL(),{headers:{Authorization:'Bearer '+await idTok()}});if(r.status===404)return null;if(!r.ok)throw await fsErr(r);
+ const f=(await r.json()).fields||{};return f.data?JSON.parse(f.data.stringValue):{}}
+function rosterLocal(){const d={};ROSTER_KEYS.forEach(k=>{try{const v=localStorage.getItem(k);if(v!=null)d[k]=v}catch(e){}});return d}
+async function rosterSave(){const body=JSON.stringify({fields:{data:{stringValue:JSON.stringify(rosterLocal())},updated:{timestampValue:new Date().toISOString()}}});
+ if(body.length>1000000)throw new Error('TROP_GROS');
+ const r=await fetch(rosterURL(),{method:'PATCH',headers:{Authorization:'Bearer '+await idTok(),'Content-Type':'application/json'},body});if(!r.ok)throw await fsErr(r)}
+let rosT=null;
+function queueRoster(){if(!isAdmin())return;CLOUD('☁️ …');clearTimeout(rosT);rosT=setTimeout(pushRoster,1200)}
+async function pushRoster(){clearTimeout(rosT);rosT=null;
+ try{try{await rosterSave()}catch(e){if(!String(e.message).startsWith('PERMISSION_DENIED'))throw e;await refreshTok();await rosterSave()}CLOUD('☁️ Combattants publiés')}
+ catch(e){CLOUD('⚠️ Combattants non publiés');const m=String(e.message);
+  toast(m.startsWith('PERMISSION_DENIED')?'Pas publié : vérifie ton e-mail dans « Mon compte »':m==='TROP_GROS'?'Trop de photos : la limite en ligne est atteinte':errMsg(e))}}
+async function pullRoster(fallback){let d;try{d=await rosterLoad()}catch(e){console.warn('roster',e);return}
+ if(d){ROSTER_KEYS.forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});for(const k in d)if(ROSTER_KEYS.includes(k))try{localStorage.setItem(k,d[k])}catch(e){}}
+ else if(isAdmin()){if(fallback)for(const k of ROSTER_KEYS)try{if(fallback[k]!=null&&localStorage.getItem(k)==null)localStorage.setItem(k,fallback[k])}catch(e){}
+  try{await rosterSave()}catch(e){console.warn('roster',e)}}
+ else ROSTER_KEYS.forEach(k=>{try{localStorage.removeItem(k)}catch(e){}})}
 function setSession(j,name){ACC={uid:j.localId,email:j.email,name:name||j.displayName||'',idToken:j.idToken,refreshToken:j.refreshToken,exp:Date.now()+(+j.expiresIn-60)*1000};saveSession()}
 let aMode='in';
 function aMsg(t,ok){const e=$('#aErr');e.textContent=t;e.classList.toggle('ok',!!ok)}
@@ -464,8 +489,14 @@ $('#aForgot').onclick=async()=>{const email=$('#aEmail').value.trim();if(!email)
  try{await fbAuth('sendOobCode',{requestType:'PASSWORD_RESET',email});aMsg('E-mail envoyé ! Regarde ta boîte de réception (et les spams).',true)}catch(x){aMsg(errMsg(x))}};
 function clearLocal(){SYNC_KEYS.forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});reloadState();G=null;busy=false}
 async function logout(){if(syncT||syncing){CLOUD('☁️ …');await doSync()}dropSession();clearLocal();CLOUD('');showAuth()}
-async function accountMenu(){const v=await choose('Mon compte',[{value:'out',label:'Se déconnecter'},{value:'del',label:'Supprimer mon compte'}],{cancel:'Retour',
- body:`<div class="modtxt">Pseudo : ${esc(ACC.name||'—')}<br>E-mail : ${esc(ACC.email||'')}<br><br>Ta progression est sauvegardée en ligne et te suit sur tous tes appareils.</div>`});
+async function accountMenu(){let adm='',opts=[{value:'out',label:'Se déconnecter'},{value:'del',label:'Supprimer mon compte'}];
+ if(isAdmin()){try{await refreshTok()}catch(e){}const ver=!!tokClaims().email_verified;
+  adm=`<br><br>⭐ <b style="color:var(--acc)">Administrateur</b> : tu es le seul à pouvoir créer des combattants, et tout le monde les voit.`+(ver?'':'<br>⚠️ Vérifie d’abord ton e-mail pour pouvoir publier tes combattants.');
+  if(!ver)opts.unshift({value:'verify',label:'📧 Vérifier mon e-mail'});else opts.unshift({value:'pub',label:'☁️ Republier mes combattants'})}
+ const v=await choose('Mon compte',opts,{cancel:'Retour',
+ body:`<div class="modtxt">Pseudo : ${esc(ACC.name||'—')}<br>E-mail : ${esc(ACC.email||'')}<br><br>Ta progression est sauvegardée en ligne et te suit sur tous tes appareils.${adm}</div>`});
+ if(v==='verify'){try{await fbAuth('sendOobCode',{requestType:'VERIFY_EMAIL',idToken:await idTok()});toast('E-mail envoyé ! Clique sur le lien, puis rouvre « Mon compte »')}catch(x){toast(errMsg(x))}return}
+ if(v==='pub')return pushRoster();
  if(v==='out')return logout();
  if(v==='del'){const ok=await choose('Supprimer ton compte ? Ta partie, ton record et tes combattants seront effacés pour toujours.',[{value:1,label:'Oui, supprimer'},{value:0,label:'Annuler'}],{cols:2});if(!ok)return;
   try{const t=await idTok();const r=await fetch(docURL(),{method:'DELETE',headers:{Authorization:'Bearer '+t}});if(!r.ok&&r.status!==404)throw await fsErr(r);await fbAuth('delete',{idToken:t})}

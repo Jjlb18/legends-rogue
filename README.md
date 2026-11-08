@@ -12,9 +12,7 @@ Un roguelite de combat sans fin en pixel art, avec des personnes célèbres. Cho
 
 - 30 personnages historiques et 8 types : Science, Art, Guerre, Politique, Musique, Sport, Mystique et Tech
 - Forces et faiblesses des types, niveaux, nouvelles attaques, boosts de stats et boss
-- **★ Créer des combattants** : ajoute qui tu veux avec un emoji ou ta propre photo, et choisis ses types, stats et attaques
-- Modifie ou réinitialise n'importe quel personnage de base
-- Exporte et importe tes combattants pour les partager avec tes amis
+- De nouveaux combattants ajoutés par le créateur du jeu, visibles par tous les joueurs
 - Crée un compte (e-mail + mot de passe) : ta partie, ton record et tes combattants te suivent sur tous tes appareils
 
 ## Extension Edge

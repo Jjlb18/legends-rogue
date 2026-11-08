@@ -201,7 +201,7 @@ button.link{background:none;border:none;color:var(--dim);font-family:'VT323',mon
       <button type="submit" class="primary" id="aGo">Se connecter</button>
       <button type="button" id="aForgot" class="link">Mot de passe oublié ?</button>
     </form>
-    <div class="note">Ton compte garde ta partie, ton record et tes combattants. Connecte-toi sur n’importe quel appareil pour continuer là où tu t’es arrêté.</div>
+    <div class="note">Ton compte garde ta partie et ton record. Connecte-toi sur n’importe quel appareil pour continuer là où tu t’es arrêté.</div>
   </div>
 </section>
 
@@ -250,6 +250,7 @@ button.link{background:none;border:none;color:var(--dim);font-family:'VT323',mon
   </div>
   <div class="ed-cols">
     <div class="pane">
+      <div class="note" style="margin-bottom:10px">⭐ Mode administrateur : tout ce que tu enregistres ici est publié pour tous les joueurs.</div>
       <h3 id="edTitle">Nouveau combattant</h3>
       <div class="fld"><label>Nom</label><input type="text" id="edName" maxlength="26" placeholder="Écris le nom de n’importe quelle célébrité"></div>
       <div class="fld"><label>Apparence</label>
@@ -296,7 +297,7 @@ button.link{background:none;border:none;color:var(--dim);font-family:'VT323',mon
     <div class="pane">
       <h3>Tes combattants</h3>
       <div id="edList" class="edl"></div>
-      <label class="note" style="display:flex;gap:8px;align-items:center;margin-bottom:14px"><input type="checkbox" id="useDef"> Inclure les personnages historiques dans les parties</label>
+      <label class="note" style="display:flex;gap:8px;align-items:center;margin-bottom:14px"><input type="checkbox" id="useDef"> Inclure les personnages historiques dans les parties (pour tous les joueurs)</label>
       <h3>Personnages de base</h3>
       <div class="note" style="margin-bottom:8px">Modifie-les pour changer leur nom, apparence, types, stats ou attaques. « Réinitialiser » les remet comme avant.</div>
       <div id="edBuiltin" class="edl"></div>
