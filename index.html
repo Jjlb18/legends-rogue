@@ -751,7 +751,7 @@ function continueRun(){const g=LS.get('lr_run',null);if(!g)return title();g.part
 
 // ---------- info modals ----------
 // ---------- gacha (egg machine) ----------
-const EGG={common:{n:'Commun',w:70,waves:5},rare:{n:'Rare',w:22,waves:10},epic:{n:'Épique',w:6.1,waves:15},legendary:{n:'Légendaire',w:1.5,waves:25},secret:{n:'Secret',w:.4,waves:35}};
+const EGG={common:{n:'Commun',w:70,waves:5},rare:{n:'Rare',w:22,waves:10},epic:{n:'Épique',w:6.1,waves:25},legendary:{n:'Légendaire',w:1.5,waves:50},secret:{n:'Secret',w:.4,waves:75}};
 const TIERS=['common','rare','epic','legendary','secret'],PITY=50;
 function gacha(){const g=Object.assign({tickets:3,eggs:[],stars:{},unlocked:[],pity:0,claimed:[]},LS.get('lr_gacha',{}));return g}
 function setGacha(g){LS.set('lr_gacha',g)}
@@ -781,7 +781,7 @@ function openEggs(){const g=gacha(),box=$('#modalBox'),rd=g.eggs.filter(e=>e.lef
  box.innerHTML=`<h3>🥚 Mes œufs (${g.eggs.length})</h3>
  ${rd?`<div class="btnrow" style="margin:0 0 12px"><button class="primary" id="hatchNow">🐣 Faire éclore (${rd})</button></div>`:''}
  <div class="eggs">${g.eggs.length?g.eggs.slice().sort((a,b)=>a.left-b.left).map(e=>`<div class="eg">${eggHTML(e.tier)}${e.left>0?e.left+' vague'+(e.left>1?'s':''):'Prêt !'}</div>`).join(''):'<span class="note">Aucun œuf pour l’instant. Va à la 🎰 machine à tirage pour en obtenir !</span>'}</div>
- <div class="note">Les œufs éclosent après des vagues jouées : ⚪ 5 · 🔵 10 · 🟣 15 · 🟡 25 · ⚫ 35. Un combattant éclos est débloqué ; s’il l’était déjà, il gagne une ⭐ (+2 niveaux au départ, max 5).</div>
+ <div class="note">Les œufs éclosent après des vagues jouées : ⚪ 5 · 🔵 10 · 🟣 25 · 🟡 50 · ⚫ 75. Un combattant éclos est débloqué ; s’il l’était déjà, il gagne une ⭐ (+2 niveaux au départ, max 5).</div>
  <div class="btnrow"><button id="toGacha">🎰 Machine à tirage · 🎟️ ${g.tickets}</button></div>`;
  const c=document.createElement('button');c.className='opt cancel';c.textContent='Fermer';c.onclick=()=>{$('#modal').classList.add('hidden');if(!$('#s-title').classList.contains('hidden'))title()};box.appendChild(c);
  $('#modal').classList.remove('hidden');
