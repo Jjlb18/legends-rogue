@@ -784,7 +784,7 @@ function queueRoster(){if(!isAdmin())return;CLOUD('☁️ …');clearTimeout(ros
 async function pushRoster(){clearTimeout(rosT);rosT=null;
  try{try{await rosterSave()}catch(e){if(!String(e.message).startsWith('PERMISSION_DENIED'))throw e;await refreshTok();await rosterSave()}CLOUD('☁️ Combattants publiés')}
  catch(e){CLOUD('⚠️ Combattants non publiés');const m=String(e.message);
-  toast(m.startsWith('PERMISSION_DENIED')?'Pas publié : vérifie ton e-mail dans « Mon compte »':m==='TROP_GROS'?'Trop de photos : la limite en ligne est atteinte':errMsg(e))}}
+  toast(m.startsWith('PERMISSION_DENIED')?'Pas publié : vérifie les règles Firestore':m==='TROP_GROS'?'Trop de photos : la limite en ligne est atteinte':errMsg(e))}}
 async function pullRoster(fallback){let d;try{d=await rosterLoad()}catch(e){console.warn('roster',e);return}
  if(d){ROSTER_KEYS.forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});for(const k in d)if(ROSTER_KEYS.includes(k))try{localStorage.setItem(k,d[k])}catch(e){}}
  else if(isAdmin()){if(fallback)for(const k of ROSTER_KEYS)try{if(fallback[k]!=null&&localStorage.getItem(k)==null)localStorage.setItem(k,fallback[k])}catch(e){}
@@ -812,8 +812,8 @@ function clearLocal(){SYNC_KEYS.forEach(k=>{try{localStorage.removeItem(k)}catch
 async function logout(){if(syncT||syncing){CLOUD('☁️ …');await doSync()}dropSession();clearLocal();CLOUD('');showAuth()}
 async function accountMenu(){let adm='',opts=[{value:'out',label:'Se déconnecter'},{value:'del',label:'Supprimer mon compte'}];
  if(isAdmin()){try{await refreshTok()}catch(e){}const ver=!!tokClaims().email_verified;
-  adm=`<br><br>⭐ <b style="color:var(--acc)">Administrateur</b> : tu es le seul à pouvoir créer des combattants, et tout le monde les voit.`+(ver?'':'<br>⚠️ Vérifie d’abord ton e-mail pour pouvoir publier tes combattants.');
-  if(!ver)opts.unshift({value:'verify',label:'📧 Vérifier mon e-mail'});else opts.unshift({value:'pub',label:'☁️ Republier mes combattants'})}
+  adm=`<br><br>⭐ <b style="color:var(--acc)">Administrateur</b> : tu es le seul à pouvoir créer des combattants, et tout le monde les voit.`;
+  opts.unshift({value:'pub',label:'☁️ Republier mes combattants'});if(!ver)opts.push({value:'verify',label:'📧 Vérifier mon e-mail (facultatif)'})}
  const v=await choose('Mon compte',opts,{cancel:'Retour',
  body:`<div class="modtxt">Pseudo : ${esc(ACC.name||'—')}<br>E-mail : ${esc(ACC.email||'')}<br><br>Ta progression est sauvegardée en ligne et te suit sur tous tes appareils.${adm}</div>`});
  if(v==='verify'){try{await fbAuth('sendOobCode',{requestType:'VERIFY_EMAIL',idToken:await idTok()});toast('E-mail envoyé ! Clique sur le lien, puis rouvre « Mon compte »')}catch(x){toast(errMsg(x))}return}
